@@ -44,6 +44,44 @@ export interface EconomicIndicators {
   
   // Sentiment
   fearGreedIndex: number;
+  
+  // Stocks - Professional Metrics
+  earningsGrowth: number;
+  revenueGrowth: number;
+  profitMargin: number;
+  sharesOutstanding: number;
+  buffettIndicator: number; // Market cap to GDP
+  shillerPE: number;
+  
+  // Crypto - On-Chain Metrics
+  btcHashRate: number;
+  btcActiveAddresses: number;
+  btcExchangeInflow: number;
+  btcMVRV: number; // Market Value to Realized Value
+  stablecoinSupply: number;
+  cryptoFundingRate: number;
+  
+  // Housing - Pro Indicators
+  housingStarts: number;
+  buildingPermits: number;
+  existingHomeSales: number;
+  pendingHomeSales: number;
+  daysOnMarket: number;
+  priceToRent: number;
+  
+  // Metals - Professional Focus
+  goldMiningProduction: number;
+  centralBankPurchases: number;
+  industrialDemand: number;
+  goldSilverRatio: number;
+  realYieldCorrelation: number;
+  
+  // Bonds - Fixed Income Pro Metrics
+  duration: number;
+  convexity: number;
+  oisSpread: number;
+  tipsSpread: number;
+  municipalBondYield: number;
 }
 
 export const generateMockData = (scenario: 'bottom' | 'peak' | 'crisis' = 'bottom'): EconomicIndicators => {
@@ -79,6 +117,39 @@ export const generateMockData = (scenario: 'bottom' | 'peak' | 'crisis' = 'botto
       mortgageDelinquency: 2.1,
       homeInventory: 1.2,
       fearGreedIndex: 28,
+      // Stocks
+      earningsGrowth: 8.5,
+      revenueGrowth: 6.2,
+      profitMargin: 11.8,
+      sharesOutstanding: -2.1,
+      buffettIndicator: 152,
+      shillerPE: 28.5,
+      // Crypto
+      btcHashRate: 450,
+      btcActiveAddresses: 850000,
+      btcExchangeInflow: -12000,
+      btcMVRV: 1.8,
+      stablecoinSupply: 145,
+      cryptoFundingRate: 0.01,
+      // Housing
+      housingStarts: 1450,
+      buildingPermits: 1520,
+      existingHomeSales: 4.2,
+      pendingHomeSales: 98,
+      daysOnMarket: 32,
+      priceToRent: 22,
+      // Metals
+      goldMiningProduction: 3200,
+      centralBankPurchases: 450,
+      industrialDemand: 2800,
+      goldSilverRatio: 82,
+      realYieldCorrelation: -0.75,
+      // Bonds
+      duration: 6.5,
+      convexity: 0.8,
+      oisSpread: 0.12,
+      tipsSpread: 2.2,
+      municipalBondYield: 3.8,
     },
     peak: {
       bbbAaaSpread: 1.2,
@@ -111,6 +182,39 @@ export const generateMockData = (scenario: 'bottom' | 'peak' | 'crisis' = 'botto
       mortgageDelinquency: 1.2,
       homeInventory: 0.8,
       fearGreedIndex: 82,
+      // Stocks
+      earningsGrowth: 15.2,
+      revenueGrowth: 12.8,
+      profitMargin: 13.5,
+      sharesOutstanding: -3.5,
+      buffettIndicator: 195,
+      shillerPE: 35.2,
+      // Crypto
+      btcHashRate: 550,
+      btcActiveAddresses: 1200000,
+      btcExchangeInflow: 25000,
+      btcMVRV: 3.2,
+      stablecoinSupply: 165,
+      cryptoFundingRate: 0.05,
+      // Housing
+      housingStarts: 1750,
+      buildingPermits: 1820,
+      existingHomeSales: 5.8,
+      pendingHomeSales: 112,
+      daysOnMarket: 18,
+      priceToRent: 28,
+      // Metals
+      goldMiningProduction: 3150,
+      centralBankPurchases: 280,
+      industrialDemand: 3200,
+      goldSilverRatio: 75,
+      realYieldCorrelation: -0.82,
+      // Bonds
+      duration: 5.2,
+      convexity: 0.6,
+      oisSpread: 0.08,
+      tipsSpread: 1.5,
+      municipalBondYield: 2.8,
     },
     crisis: {
       bbbAaaSpread: 4.8,
@@ -143,6 +247,39 @@ export const generateMockData = (scenario: 'bottom' | 'peak' | 'crisis' = 'botto
       mortgageDelinquency: 4.8,
       homeInventory: 1.8,
       fearGreedIndex: 15,
+      // Stocks
+      earningsGrowth: -8.5,
+      revenueGrowth: -2.1,
+      profitMargin: 8.2,
+      sharesOutstanding: 1.2,
+      buffettIndicator: 118,
+      shillerPE: 18.5,
+      // Crypto
+      btcHashRate: 380,
+      btcActiveAddresses: 520000,
+      btcExchangeInflow: 45000,
+      btcMVRV: 0.8,
+      stablecoinSupply: 155,
+      cryptoFundingRate: -0.02,
+      // Housing
+      housingStarts: 980,
+      buildingPermits: 1050,
+      existingHomeSales: 3.2,
+      pendingHomeSales: 78,
+      daysOnMarket: 58,
+      priceToRent: 18,
+      // Metals
+      goldMiningProduction: 3300,
+      centralBankPurchases: 720,
+      industrialDemand: 2200,
+      goldSilverRatio: 95,
+      realYieldCorrelation: -0.88,
+      // Bonds
+      duration: 7.8,
+      convexity: 1.2,
+      oisSpread: 0.35,
+      tipsSpread: 3.2,
+      municipalBondYield: 5.2,
     },
   };
 
