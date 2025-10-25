@@ -25,10 +25,12 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-gradient mb-2">AI Wealth Navigator</h1>
-            <p className="text-muted-foreground">Real-time economic risk analysis with AI-powered investment guidance</p>
-          </div>
+        <Navigation />
+        
+        <div>
+          <h1 className="text-4xl font-bold text-gradient mb-2">AI Wealth Navigator</h1>
+          <p className="text-muted-foreground">Real-time economic risk analysis with AI-powered investment guidance</p>
+        </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
