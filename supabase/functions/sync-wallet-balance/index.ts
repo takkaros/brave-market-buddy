@@ -111,9 +111,10 @@ serve(async (req) => {
       }
     } else if (blockchain === 'Ethereum') {
       console.log('sync-wallet-balance: Fetching Ethereum balance from Etherscan');
-      // Use public Etherscan API (no key required, but rate limited)
+      const etherscanKey = Deno.env.get('ETHERSCAN_API_KEY');
+      
       const ethResponse = await fetch(
-        `https://api.etherscan.io/api?module=account&action=balance&address=${walletAddress}&tag=latest`
+        `https://api.etherscan.io/api?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${etherscanKey}`
       );
       
       if (ethResponse.ok) {
@@ -150,6 +151,117 @@ serve(async (req) => {
       } else {
         const errorText = await ethResponse.text();
         console.error('sync-wallet-balance: Etherscan HTTP error:', errorText);
+      }
+    } else if (blockchain === 'Polygon') {
+      console.log('sync-wallet-balance: Fetching Polygon balance from Polygonscan');
+      const etherscanKey = Deno.env.get('ETHERSCAN_API_KEY'); // Polygonscan accepts Etherscan API key
+      
+      const polyResponse = await fetch(
+        `https://api.polygonscan.com/api?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${etherscanKey}`
+      );
+      
+      if (polyResponse.ok) {
+        const polyData = await polyResponse.json();
+        console.log('sync-wallet-balance: Polygonscan response:', JSON.stringify(polyData));
+        
+        if (polyData.status === '1') {
+          balance = parseInt(polyData.result || '0') / 1e18;
+          console.log('sync-wallet-balance: Parsed MATIC balance:', balance);
+          
+          // Get MATIC price
+          const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
+            body: { symbol: 'MATIC' }
+          });
+          
+          const maticPrice = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
+          console.log('sync-wallet-balance: MATIC price:', maticPrice);
+          
+          holdings = [{
+            asset_symbol: 'MATIC',
+            asset_name: 'Polygon',
+            amount: balance,
+            price_usd: maticPrice,
+            value_usd: balance * maticPrice,
+          }];
+        } else {
+          console.error('sync-wallet-balance: Polygonscan API error:', polyData.message || polyData.result);
+        }
+      }
+    } else if (blockchain === 'BSC') {
+      console.log('sync-wallet-balance: Fetching BSC balance from BscScan');
+      const etherscanKey = Deno.env.get('ETHERSCAN_API_KEY'); // BscScan accepts Etherscan API key
+      
+      const bscResponse = await fetch(
+        `https://api.bscscan.com/api?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${etherscanKey}`
+      );
+      
+      if (bscResponse.ok) {
+        const bscData = await bscResponse.json();
+        console.log('sync-wallet-balance: BscScan response:', JSON.stringify(bscData));
+        
+        if (bscData.status === '1') {
+          balance = parseInt(bscData.result || '0') / 1e18;
+          console.log('sync-wallet-balance: Parsed BNB balance:', balance);
+          
+          // Get BNB price
+          const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
+            body: { symbol: 'BNB' }
+          });
+          
+          const bnbPrice = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
+          console.log('sync-wallet-balance: BNB price:', bnbPrice);
+          
+          holdings = [{
+            asset_symbol: 'BNB',
+            asset_name: 'BNB',
+            amount: balance,
+            price_usd: bnbPrice,
+            value_usd: balance * bnbPrice,
+          }];
+        } else {
+          console.error('sync-wallet-balance: BscScan API error:', bscData.message || bscData.result);
+        }
+      }
+    } else if (blockchain === 'Solana') {
+      console.log('sync-wallet-balance: Fetching Solana balance from public RPC');
+      
+      const solResponse = await fetch('https://api.mainnet-beta.solana.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'getBalance',
+          params: [walletAddress]
+        })
+      });
+      
+      if (solResponse.ok) {
+        const solData = await solResponse.json();
+        console.log('sync-wallet-balance: Solana RPC response:', JSON.stringify(solData));
+        
+        if (solData.result) {
+          balance = (solData.result.value || 0) / 1e9; // SOL has 9 decimals
+          console.log('sync-wallet-balance: Parsed SOL balance:', balance);
+          
+          // Get SOL price
+          const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
+            body: { symbol: 'SOL' }
+          });
+          
+          const solPrice = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
+          console.log('sync-wallet-balance: SOL price:', solPrice);
+          
+          holdings = [{
+            asset_symbol: 'SOL',
+            asset_name: 'Solana',
+            amount: balance,
+            price_usd: solPrice,
+            value_usd: balance * solPrice,
+          }];
+        } else {
+          console.error('sync-wallet-balance: Solana RPC error:', solData.error);
+        }
       }
     }
 
