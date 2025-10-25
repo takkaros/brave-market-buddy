@@ -10,12 +10,29 @@ import { RefreshCw, TrendingDown, TrendingUp, AlertTriangle } from 'lucide-react
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface AIAnalysis {
+  signal: string;
+  signalScore: number;
+  marketContext: string;
+  btcAllocation: string;
+  ethAllocation: string;
+  altAllocation: string;
+  btcSupport: string[];
+  btcResistance: string[];
+  ethSupport: string[];
+  ethResistance: string[];
+  riskFactors: string[];
+  bottomLine: string;
+}
+
 const Crypto = () => {
   const [timeframe, setTimeframe] = useState('1M');
   const [btcPrice, setBtcPrice] = useState(42000);
   const [ethPrice, setEthPrice] = useState(2250);
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
   const mockData = generateMockData('bottom');
   const { toast } = useToast();
   
@@ -23,6 +40,36 @@ const Crypto = () => {
   const btcDominance = 52;
   const fearGreed = mockData.fearGreedIndex;
   const cryptoMarketCap = 1.65; // Trillion
+
+  const fetchAIAnalysis = async (currentBtcPrice: number, currentEthPrice: number) => {
+    setAnalysisLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('crypto-market-analysis', {
+        body: { 
+          btcPrice: currentBtcPrice,
+          ethPrice: currentEthPrice,
+          fearGreed,
+          btcDominance,
+          marketCap: cryptoMarketCap
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.analysis) {
+        setAiAnalysis(data.analysis);
+      }
+    } catch (error) {
+      console.error('Error fetching AI analysis:', error);
+      toast({
+        title: "Failed to fetch AI analysis",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
 
   const fetchCryptoData = async () => {
     setLoading(true);
@@ -33,9 +80,13 @@ const Crypto = () => {
 
       if (btcError) throw btcError;
 
+      let newBtcPrice = btcPrice;
+      let newEthPrice = ethPrice;
+
       if (btcData?.success && btcData?.data?.Data?.Data) {
         const latestBTC = btcData.data.Data.Data[btcData.data.Data.Data.length - 1];
-        setBtcPrice(latestBTC.close);
+        newBtcPrice = latestBTC.close;
+        setBtcPrice(newBtcPrice);
       }
 
       const { data: ethData, error: ethError } = await supabase.functions.invoke('fetch-crypto-data', {
@@ -46,10 +97,14 @@ const Crypto = () => {
 
       if (ethData?.success && ethData?.data?.Data?.Data) {
         const latestETH = ethData.data.Data.Data[ethData.data.Data.Data.length - 1];
-        setEthPrice(latestETH.close);
+        newEthPrice = latestETH.close;
+        setEthPrice(newEthPrice);
       }
 
       setLastUpdated(new Date().toLocaleString());
+      
+      // Fetch AI analysis with updated prices
+      await fetchAIAnalysis(newBtcPrice, newEthPrice);
     } catch (error) {
       console.error('Error fetching crypto data:', error);
       toast({
@@ -96,15 +151,9 @@ const Crypto = () => {
     volume: 45 + (Math.random() - 0.5) * 15,
   }));
 
-  // Calculate signal
-  const getBuySignal = () => {
-    if (fearGreed < 30 && btcPrice < 45000) return 'STRONG BUY';
-    if (fearGreed < 40 && btcPrice < 50000) return 'BUY';
-    if (fearGreed > 70 || btcPrice > 65000) return 'SELL';
-    return 'HOLD';
-  };
-
-  const signal = getBuySignal();
+  // Calculate signal from AI or fallback
+  const signal = aiAnalysis?.signal || 'HOLD';
+  const signalScore = aiAnalysis?.signalScore || 5.0;
   const signalColor = signal.includes('BUY') ? 'hsl(142, 76%, 36%)' : 
                       signal === 'HOLD' ? 'hsl(45, 93%, 47%)' : 
                       'hsl(0, 84%, 60%)';
@@ -157,7 +206,7 @@ const Crypto = () => {
               <div className="text-right">
                 <p className="text-sm text-muted-foreground mb-1">Overall Score</p>
                 <p className="text-4xl font-bold" style={{ color: signalColor }}>
-                  {signal.includes('BUY') ? '8.5' : signal === 'HOLD' ? '5.0' : '2.5'}/10
+                  {signalScore}/10
                 </p>
               </div>
             </div>
@@ -294,89 +343,89 @@ const Crypto = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>AI Crypto Market Analysis</CardTitle>
-              <Button size="sm" variant="outline" className="gap-2" onClick={fetchCryptoData} disabled={loading}>
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <Button size="sm" variant="outline" className="gap-2" onClick={fetchCryptoData} disabled={loading || analysisLoading}>
+                <RefreshCw className={`w-4 h-4 ${(loading || analysisLoading) ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="prose prose-invert max-w-none">
-              <h3 className="text-xl font-bold mb-3">Current Assessment: {signal}</h3>
-              
-              <div className="space-y-4 text-sm">
-                <div>
-                  <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
-                    {signal.includes('BUY') ? <TrendingUp className="w-5 h-5 text-risk-low" /> : <TrendingDown className="w-5 h-5 text-risk-elevated" />}
-                    Market Context
-                  </h4>
-                  <p className="text-muted-foreground">
-                    Bitcoin at ${btcPrice.toLocaleString()} is down 39% from its $69k all-time high. 
-                    Historical data shows BTC typically bottoms between $30k-$45k during bear markets, 
-                    making current levels attractive for long-term accumulation. Fear & Greed Index at {fearGreed} 
-                    indicates extreme fear - often the best time to buy according to contrarian indicators.
-                  </p>
-                </div>
+            {analysisLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
+                <p className="ml-3 text-muted-foreground">Generating AI analysis...</p>
+              </div>
+            ) : aiAnalysis ? (
+              <div className="prose prose-invert max-w-none">
+                <h3 className="text-xl font-bold mb-3">Current Assessment: {aiAnalysis.signal}</h3>
+                
+                <div className="space-y-4 text-sm">
+                  <div>
+                    <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
+                      {aiAnalysis.signal.includes('BUY') ? <TrendingUp className="w-5 h-5 text-risk-low" /> : <TrendingDown className="w-5 h-5 text-risk-elevated" />}
+                      Market Context
+                    </h4>
+                    <p className="text-muted-foreground">
+                      {aiAnalysis.marketContext}
+                    </p>
+                  </div>
 
-                <div>
-                  <h4 className="font-semibold text-base mb-2">💡 Specific Actions</h4>
-                  <ul className="space-y-2 ml-4">
-                    <li>
-                      <strong>Bitcoin (60% allocation):</strong> Dollar-cost average into BTC over 2-3 months. 
-                      Target allocation: {signal.includes('BUY') ? '5-10%' : '2-5%'} of portfolio.
-                    </li>
-                    <li>
-                      <strong>Ethereum (30% allocation):</strong> ETH at ${ethPrice.toLocaleString()} offers higher risk/reward. 
-                      Good for tech-savvy investors who understand DeFi and NFTs.
-                    </li>
-                    <li>
-                      <strong>Alt Coins (10% allocation):</strong> Only for aggressive investors. 
-                      Wait for BTC to establish uptrend before rotating into alts.
-                    </li>
-                  </ul>
-                </div>
+                  <div>
+                    <h4 className="font-semibold text-base mb-2">💡 Specific Actions</h4>
+                    <ul className="space-y-2 ml-4">
+                      <li>
+                        <strong>Bitcoin ({aiAnalysis.btcAllocation} allocation):</strong> Primary crypto holding
+                      </li>
+                      <li>
+                        <strong>Ethereum ({aiAnalysis.ethAllocation} allocation):</strong> Secondary position
+                      </li>
+                      <li>
+                        <strong>Alt Coins ({aiAnalysis.altAllocation} allocation):</strong> Speculative positions
+                      </li>
+                    </ul>
+                  </div>
 
-                <div>
-                  <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-risk-moderate" />
-                    Risk Factors
-                  </h4>
-                  <ul className="space-y-1 ml-4 text-muted-foreground">
-                    <li>• Regulatory uncertainty (SEC lawsuits, potential bans)</li>
-                    <li>• Macroeconomic headwinds (Fed rate hikes, recession fears)</li>
-                    <li>• Exchange risk (FTX collapse still fresh in memory)</li>
-                    <li>• Leverage liquidations can cause sudden 20%+ drops</li>
-                  </ul>
-                </div>
+                  <div>
+                    <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-risk-moderate" />
+                      Risk Factors
+                    </h4>
+                    <ul className="space-y-1 ml-4 text-muted-foreground">
+                      {aiAnalysis.riskFactors.map((factor, idx) => (
+                        <li key={idx}>• {factor}</li>
+                      ))}
+                    </ul>
+                  </div>
 
-                <div>
-                  <h4 className="font-semibold text-base mb-2">📊 Key Levels to Watch</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="font-medium">Support Levels:</p>
-                      <p className="text-muted-foreground">BTC: $38k, $32k, $28k</p>
-                      <p className="text-muted-foreground">ETH: $2k, $1.8k, $1.5k</p>
-                    </div>
-                    <div>
-                      <p className="font-medium">Resistance Levels:</p>
-                      <p className="text-muted-foreground">BTC: $48k, $52k, $58k</p>
-                      <p className="text-muted-foreground">ETH: $2.5k, $3k, $3.5k</p>
+                  <div>
+                    <h4 className="font-semibold text-base mb-2">📊 Key Levels to Watch</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="font-medium">Support Levels:</p>
+                        <p className="text-muted-foreground">BTC: {aiAnalysis.btcSupport.join(', ')}</p>
+                        <p className="text-muted-foreground">ETH: {aiAnalysis.ethSupport.join(', ')}</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Resistance Levels:</p>
+                        <p className="text-muted-foreground">BTC: {aiAnalysis.btcResistance.join(', ')}</p>
+                        <p className="text-muted-foreground">ETH: {aiAnalysis.ethResistance.join(', ')}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="bg-primary/10 border-l-4 border-primary p-4 rounded">
-                  <p className="font-semibold mb-2">Bottom Line for Crypto:</p>
-                  <p className="text-muted-foreground">
-                    {signal.includes('BUY') ? 
-                      "This is a strong accumulation zone. History suggests buying when fear is high. Expected 12-24 month return: +100-300% if crypto follows previous cycles. Start with 3-5% portfolio allocation, increase to 10% if conviction grows." :
-                      signal === 'HOLD' ?
-                      "Market is neutral. Wait for clearer direction. Use this time to research and prepare. Set alerts for key support/resistance levels." :
-                      "Risk/reward not favorable. Take profits on existing positions. Wait for Fear & Greed below 30 and BTC below $45k before re-entering."}
-                  </p>
+                  <div className="bg-primary/10 border-l-4 border-primary p-4 rounded">
+                    <p className="font-semibold mb-2">Bottom Line for Crypto:</p>
+                    <p className="text-muted-foreground">
+                      {aiAnalysis.bottomLine}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                Click refresh to generate AI analysis
+              </div>
+            )}
           </CardContent>
         </Card>
 
