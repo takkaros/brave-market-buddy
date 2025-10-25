@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.portfolio-analysis]
 verify_jwt = false
+
+[functions.sync-wallet-balance]
+verify_jwt = true

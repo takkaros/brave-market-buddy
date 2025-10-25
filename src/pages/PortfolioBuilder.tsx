@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
+import AddConnectionDialog from '@/components/AddConnectionDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowRight, TrendingUp, Target, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ArrowRight, TrendingUp, Target, AlertTriangle, RefreshCw, Wallet as WalletIcon, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const PortfolioBuilder = () => {
@@ -24,9 +25,93 @@ const PortfolioBuilder = () => {
     realEstate: 5,
   });
   const [analysis, setAnalysis] = useState<any>(null);
+  const [connections, setConnections] = useState<any[]>([]);
+  const [holdings, setHoldings] = useState<any[]>([]);
 
   const totalAllocation = Object.values(allocation).reduce((sum, val) => sum + val, 0);
   const isValidAllocation = totalAllocation === 100;
+
+  const fetchConnections = async () => {
+    try {
+      const { data: connectionsData, error: connError } = await supabase
+        .from('portfolio_connections')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (connError) throw connError;
+      setConnections(connectionsData || []);
+
+      const { data: holdingsData, error: holdError } = await supabase
+        .from('portfolio_holdings')
+        .select('*');
+
+      if (holdError) throw holdError;
+      setHoldings(holdingsData || []);
+    } catch (error: any) {
+      console.error('Failed to fetch connections:', error);
+    }
+  };
+
+  const syncConnection = async (connection: any) => {
+    if (connection.connection_type === 'wallet') {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) throw new Error('Not authenticated');
+
+        await supabase.functions.invoke('sync-wallet-balance', {
+          body: {
+            connectionId: connection.id,
+            blockchain: connection.blockchain,
+            walletAddress: connection.wallet_address,
+          },
+          headers: {
+            Authorization: `Bearer ${sessionData.session.access_token}`,
+          },
+        });
+
+        toast({
+          title: 'Sync Complete',
+          description: `Updated ${connection.name}`,
+        });
+
+        fetchConnections();
+      } catch (error: any) {
+        toast({
+          title: 'Sync Failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  const deleteConnection = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('portfolio_connections')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Connection Removed',
+        description: 'Connection deleted successfully',
+      });
+
+      fetchConnections();
+    } catch (error: any) {
+      toast({
+        title: 'Failed to Delete',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchConnections();
+  }, []);
 
   const handleInputChange = (asset: string, value: string) => {
     const numValue = parseFloat(value) || 0;
@@ -90,11 +175,73 @@ const PortfolioBuilder = () => {
         <Navigation />
         
         <div className="mb-6">
-          <h1 className="text-4xl font-bold mb-2 gradient-text">Portfolio Builder</h1>
-          <p className="text-muted-foreground">
-            AI-powered portfolio optimization and rebalancing recommendations
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold mb-2 gradient-text">Portfolio Builder</h1>
+              <p className="text-muted-foreground">
+                AI-powered portfolio optimization and rebalancing recommendations
+              </p>
+            </div>
+            <AddConnectionDialog onConnectionAdded={fetchConnections} />
+          </div>
         </div>
+
+        {/* Connected Accounts Section */}
+        {connections.length > 0 && (
+          <Card className="glass-card mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <WalletIcon className="w-5 h-5" />
+                Connected Accounts ({connections.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {connections.map((conn) => {
+                  const connHoldings = holdings.filter(h => h.connection_id === conn.id);
+                  const totalValue = connHoldings.reduce((sum, h) => sum + (h.value_usd || 0), 0);
+
+                  return (
+                    <div key={conn.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div>
+                        <p className="font-semibold">{conn.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {conn.connection_type === 'wallet' 
+                            ? `${conn.blockchain} • ${conn.wallet_address.slice(0, 6)}...${conn.wallet_address.slice(-4)}`
+                            : `${conn.exchange_name} Exchange`
+                          }
+                        </p>
+                        {connHoldings.length > 0 && (
+                          <p className="text-sm mt-1">
+                            Value: ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {conn.connection_type === 'wallet' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => syncConnection(conn)}
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteConnection(conn.id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Input Section */}
