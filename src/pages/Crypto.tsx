@@ -30,6 +30,8 @@ const Crypto = () => {
   const [timeframe, setTimeframe] = useState('1M');
   const [btcPrice, setBtcPrice] = useState(42000);
   const [ethPrice, setEthPrice] = useState(2250);
+  const [btcAth, setBtcAth] = useState(108135); // Will be updated dynamically
+  const [ethAth, setEthAth] = useState(4878); // Will be updated dynamically
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
@@ -107,6 +109,10 @@ const Crypto = () => {
         const latestBTC = btcData.data.Data.Data[btcData.data.Data.Data.length - 1];
         newBtcPrice = latestBTC.close;
         setBtcPrice(newBtcPrice);
+        
+        // Calculate ATH dynamically from historical data
+        const btcHigh = Math.max(...btcData.data.Data.Data.map((d: any) => d.high));
+        setBtcAth(Math.max(btcHigh, 108135)); // Use historical high or known ATH
       }
 
       const { data: ethData, error: ethError } = await supabase.functions.invoke('fetch-crypto-data', {
@@ -119,6 +125,10 @@ const Crypto = () => {
         const latestETH = ethData.data.Data.Data[ethData.data.Data.Data.length - 1];
         newEthPrice = latestETH.close;
         setEthPrice(newEthPrice);
+        
+        // Calculate ATH dynamically from historical data
+        const ethHigh = Math.max(...ethData.data.Data.Data.map((d: any) => d.high));
+        setEthAth(Math.max(ethHigh, 4878)); // Use historical high or known ATH
       }
 
       setLastUpdated(new Date().toLocaleString());
@@ -311,7 +321,7 @@ const Crypto = () => {
             <CardContent>
               <p className="text-3xl font-bold">${btcPrice.toLocaleString()}</p>
               <p className="text-sm text-risk-elevated mt-1">
-                {((btcPrice - 108135) / 108135 * 100).toFixed(0)}% from ATH (€108k)
+                {((btcPrice - btcAth) / btcAth * 100).toFixed(1)}% from ATH (${btcAth.toLocaleString()})
               </p>
             </CardContent>
           </Card>
@@ -326,7 +336,7 @@ const Crypto = () => {
             <CardContent>
               <p className="text-3xl font-bold">${ethPrice.toLocaleString()}</p>
               <p className="text-sm text-risk-elevated mt-1">
-                {((ethPrice - 4878) / 4878 * 100).toFixed(0)}% from ATH (€4.9k)
+                {((ethPrice - ethAth) / ethAth * 100).toFixed(1)}% from ATH (${ethAth.toLocaleString()})
               </p>
             </CardContent>
           </Card>

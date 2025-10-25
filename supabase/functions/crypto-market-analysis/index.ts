@@ -29,8 +29,8 @@ serve(async (req) => {
     const prompt = `You are a professional cryptocurrency market analyst specializing in the European/Cyprus market. Based on current market data, provide a personalized technical analysis.
 
 Current Market Data:
-- Bitcoin (BTC): $${btcPrice.toLocaleString()} (€${(btcPrice * 0.92).toFixed(0)})
-- Ethereum (ETH): $${ethPrice.toLocaleString()} (€${(ethPrice * 0.92).toFixed(0)})
+- Bitcoin (BTC): $${btcPrice.toLocaleString()}
+- Ethereum (ETH): $${ethPrice.toLocaleString()}
 - Fear & Greed Index: ${fearGreed}
 - BTC Dominance: ${btcDominance}%
 - Total Market Cap: $${marketCap}T
@@ -38,7 +38,6 @@ ${holdingsContext}
 
 **Cyprus/Europe Market Context:**
 - Trading hours: Consider European timezone (GMT+2 Cyprus)
-- EUR/USD exchange rate: ~0.92
 - European crypto regulations (MiCA framework)
 - Cyprus tax implications: 0% capital gains on crypto
 - Recommended European exchanges: Kraken, Bitstamp, Coinbase
@@ -52,18 +51,18 @@ Provide a comprehensive PERSONALIZED analysis in the following JSON format (resp
   "btcAllocation": "percentage recommendation (consider their current holdings)",
   "ethAllocation": "percentage recommendation (consider their current holdings)", 
   "altAllocation": "percentage recommendation",
-  "btcSupport": ["€XX,XXX level1", "€XX,XXX level2", "€XX,XXX level3"] (in EUR),
-  "btcResistance": ["€XX,XXX level1", "€XX,XXX level2", "€XX,XXX level3"] (in EUR),
-  "ethSupport": ["€X,XXX level1", "€X,XXX level2", "€X,XXX level3"] (in EUR),
-  "ethResistance": ["€X,XXX level1", "€X,XXX level2", "€X,XXX level3"] (in EUR),
+  "btcSupport": ["$XX,XXX level1", "$XX,XXX level2", "$XX,XXX level3"] (in USD),
+  "btcResistance": ["$XX,XXX level1", "$XX,XXX level2", "$XX,XXX level3"] (in USD),
+  "ethSupport": ["$X,XXX level1", "$X,XXX level2", "$X,XXX level3"] (in USD),
+  "ethResistance": ["$X,XXX level1", "$X,XXX level2", "$X,XXX level3"] (in USD),
   "riskFactors": ["factor1 relevant to EU/Cyprus", "factor2", "factor3", "factor4"],
   "bottomLine": "2-3 sentence personalized summary based on their holdings with specific advice for Cyprus investors"
 }
 
 Base your analysis on:
-- Current price levels vs historical ranges (in EUR terms)
+- Current price levels vs historical ranges (in USD)
 - Fear & Greed sentiment
-- Technical support/resistance levels in EUR
+- Technical support/resistance levels in USD
 - Market structure and trends
 - Risk/reward at current levels FOR THIS SPECIFIC INVESTOR based on their holdings
 - European trading session considerations

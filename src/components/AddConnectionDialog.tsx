@@ -273,56 +273,28 @@ const AddConnectionDialog = ({ onConnectionAdded }: Props) => {
         return;
       }
 
-      const text = await file.text();
-      const lines = text.trim().split('\n');
-      const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+      const csvText = await file.text();
 
-      // Validate headers
-      const requiredHeaders = ['symbol', 'amount', 'price'];
-      const hasRequired = requiredHeaders.every(h => headers.includes(h));
-      
-      if (!hasRequired) {
-        throw new Error('CSV must have columns: symbol, amount, price (optional: name)');
-      }
+      // Call the smart CSV parser
+      const { data, error } = await supabase.functions.invoke('parse-portfolio-csv', {
+        body: { csvText }
+      });
 
-      const symbolIdx = headers.indexOf('symbol');
-      const amountIdx = headers.indexOf('amount');
-      const priceIdx = headers.indexOf('price');
-      const nameIdx = headers.indexOf('name');
-
-      const holdings = [];
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim());
-        if (values.length < 3) continue;
-
-        const symbol = values[symbolIdx];
-        const amount = parseFloat(values[amountIdx]);
-        const price = parseFloat(values[priceIdx]);
-        const name = nameIdx >= 0 ? values[nameIdx] : symbol;
-
-        if (!symbol || isNaN(amount) || isNaN(price)) continue;
-
-        holdings.push({
-          user_id: user.id,
-          asset_symbol: symbol.toUpperCase(),
-          asset_name: name,
-          amount,
-          price_usd: price,
-          value_usd: amount * price,
-          connection_id: null,
-        });
-      }
-
-      if (holdings.length === 0) {
-        throw new Error('No valid holdings found in CSV');
-      }
-
-      const { error } = await supabase.from('portfolio_holdings').insert(holdings);
       if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+
+      const holdings = data.holdings.map((h: any) => ({
+        ...h,
+        user_id: user.id,
+        connection_id: null,
+      }));
+
+      const { error: insertError } = await supabase.from('portfolio_holdings').insert(holdings);
+      if (insertError) throw insertError;
 
       toast({
-        title: 'CSV Imported',
-        description: `Successfully imported ${holdings.length} holdings`,
+        title: 'CSV Imported Successfully!',
+        description: `Imported ${holdings.length} holdings from ${data.detectedFormat.exchange} format`,
       });
 
       setOpen(false);
@@ -417,16 +389,21 @@ const AddConnectionDialog = ({ onConnectionAdded }: Props) => {
           </TabsContent>
 
           <TabsContent value="csv" className="space-y-4">
-            <div className="p-3 bg-primary/5 border border-primary/20 rounded text-xs">
-              <p className="font-semibold mb-2">CSV Format Required:</p>
-              <p>symbol,amount,price,name (optional)</p>
-              <p className="mt-2">Example:</p>
-              <code className="text-xs">BTC,0.5,42000,Bitcoin</code><br />
-              <code className="text-xs">ETH,2.5,2250,Ethereum</code>
+            <div className="p-3 bg-primary/5 border border-primary/20 rounded text-xs space-y-2">
+              <p className="font-semibold">✨ Smart CSV Import - Works with any exchange format!</p>
+              <p>Automatically recognizes formats from:</p>
+              <ul className="ml-4 list-disc">
+                <li>Binance exports</li>
+                <li>Coinbase exports</li>
+                <li>Kraken exports</li>
+                <li>Any exchange with symbol/coin + amount/balance columns</li>
+              </ul>
+              <p className="mt-2 text-primary">No formatting needed - just upload your exchange CSV!</p>
+              <p className="text-xs text-muted-foreground">If prices aren't in CSV, we'll fetch them automatically.</p>
             </div>
 
             <div>
-              <Label htmlFor="csv-upload">Upload CSV File</Label>
+              <Label htmlFor="csv-upload">Upload Exchange CSV File</Label>
               <Input
                 id="csv-upload"
                 type="file"
@@ -435,7 +412,9 @@ const AddConnectionDialog = ({ onConnectionAdded }: Props) => {
                 disabled={csvUploading}
               />
               {csvUploading && (
-                <p className="text-xs text-muted-foreground mt-2">Processing CSV...</p>
+                <p className="text-xs text-muted-foreground mt-2 animate-pulse">
+                  🔍 Analyzing CSV format and fetching live prices...
+                </p>
               )}
             </div>
           </TabsContent>
