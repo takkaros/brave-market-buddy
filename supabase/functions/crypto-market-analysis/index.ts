@@ -13,10 +13,10 @@ serve(async (req) => {
 
   try {
     const { btcPrice, ethPrice, fearGreed, btcDominance, marketCap } = await req.json();
-    const OPENAI_KEY = Deno.env.get('OPENAI_API_KEY');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
-    if (!OPENAI_KEY) {
-      throw new Error('OpenAI API key not configured');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('Lovable AI key not configured');
     }
 
     const prompt = `You are a professional cryptocurrency market analyst. Based on current market data, provide a detailed technical analysis.
@@ -53,14 +53,14 @@ Base your analysis on:
 
 Be accurate and realistic. Do not hallucinate data. Base support/resistance on actual technical analysis principles.`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_KEY}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { 
             role: 'system', 
@@ -68,14 +68,13 @@ Be accurate and realistic. Do not hallucinate data. Base support/resistance on a
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.7,
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(errorData.error?.message || 'OpenAI API error');
+      console.error('Lovable AI error:', errorData);
+      throw new Error(errorData.error?.message || 'AI API error');
     }
 
     const data = await response.json();
