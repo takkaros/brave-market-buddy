@@ -48,12 +48,12 @@ const EnhancedSettings = () => {
       placeholder: 'DEMO (or your key)',
     },
     {
-      name: 'Yahoo Finance',
+      name: 'CryptoCompare',
       key: '',
-      status: 'disconnected',
-      description: 'Alternative source for market data',
-      docsUrl: 'https://www.yahoofinanceapi.com/',
-      placeholder: 'optional',
+      status: 'connected',
+      description: 'Cryptocurrency and precious metals data',
+      docsUrl: 'https://min-api.cryptocompare.com/',
+      placeholder: 'Connected',
     },
   ]);
 

@@ -330,7 +330,7 @@ const Indicators = () => {
             </p>
             <p>
               <strong>Live data:</strong> Go to Settings to add API keys for FRED (Federal Reserve), Alpha Vantage (stocks), 
-              Yahoo Finance (crypto), and other sources. Once connected, data updates automatically.
+              CryptoCompare (crypto & metals), and other sources. Once connected, data updates automatically.
             </p>
             <p>
               <strong>Update frequency:</strong> Most indicators refresh daily. Some (VIX, market data) update every 15 minutes 

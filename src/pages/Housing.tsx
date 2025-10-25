@@ -62,9 +62,9 @@ const Housing = () => {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div>
-          <h1 className="text-4xl font-bold text-gradient mb-2">Housing Market Analysis</h1>
+          <h1 className="text-4xl font-bold text-gradient mb-2">US Housing Market Analysis</h1>
           <p className="text-muted-foreground">
-            Real estate prices, mortgage rates, affordability, and market timing signals
+            Real estate prices, mortgage rates, affordability, and market timing signals (US market data)
           </p>
         </div>
 

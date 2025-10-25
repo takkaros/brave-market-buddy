@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.fetch-crypto-data]
 verify_jwt = false
 
+[functions.fetch-metals-data]
+verify_jwt = false
+
 [functions.fetch-economic-data]
 verify_jwt = false
 

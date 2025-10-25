@@ -1,42 +1,103 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Navigation from '@/components/Navigation';
 import InfoTooltip from '@/components/InfoTooltip';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Coins } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Coins, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Metals = () => {
   const [timeframe, setTimeframe] = useState('1M');
-  const goldPrice = 2050;
-  const silverPrice = 24.5;
+  const [goldPrice, setGoldPrice] = useState(2050);
+  const [silverPrice, setSilverPrice] = useState(24.5);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [goldHistory, setGoldHistory] = useState<Array<{ day: number; gold: number; silver: number }>>([]);
   
-  const getDataPoints = () => {
-    switch(timeframe) {
-      case '1D': return 24;
-      case '1W': return 7;
-      case '1M': return 30;
-      case '3M': return 90;
-      case '6M': return 180;
-      case '1Y': return 365;
-      default: return 30;
+  const fetchMetalsData = async () => {
+    setLoading(true);
+    try {
+      // Fetch Gold data
+      const { data: goldData, error: goldError } = await supabase.functions.invoke('fetch-metals-data', {
+        body: { metal: 'GOLD', timeframe }
+      });
+
+      if (goldError) throw goldError;
+
+      // Fetch Silver data
+      const { data: silverData, error: silverError } = await supabase.functions.invoke('fetch-metals-data', {
+        body: { metal: 'SILVER', timeframe }
+      });
+
+      if (silverError) throw silverError;
+
+      if (goldData?.success && silverData?.success) {
+        const goldPriceData = goldData.data.Data?.Data || goldData.data.data?.Data?.Data;
+        const silverPriceData = silverData.data.Data?.Data || silverData.data.data?.Data?.Data;
+
+        if (goldPriceData?.length > 0) {
+          const latestGold = goldPriceData[goldPriceData.length - 1];
+          setGoldPrice(latestGold.close);
+          
+          // Convert troy ounce to USD per ounce for display
+          const goldPerOz = latestGold.close;
+          
+          // Build history
+          const history = goldPriceData.map((point: any, i: number) => {
+            const silverPoint = silverPriceData[i];
+            return {
+              day: i + 1,
+              gold: point.close,
+              silver: silverPoint?.close || 24.5,
+            };
+          });
+          
+          setGoldHistory(history);
+        }
+
+        if (silverPriceData?.length > 0) {
+          const latestSilver = silverPriceData[silverPriceData.length - 1];
+          setSilverPrice(latestSilver.close);
+        }
+
+        setLastUpdated(new Date().toLocaleString());
+        
+        if (goldData.fallback || silverData.fallback) {
+          toast.warning('Using fallback data - API limit may have been reached');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching metals data:', error);
+      toast.error('Failed to fetch metals data');
+    } finally {
+      setLoading(false);
     }
   };
-  
-  const dataPoints = getDataPoints();
-  
-  const history = Array.from({ length: dataPoints }, (_, i) => ({
-    day: i + 1,
-    gold: goldPrice + (Math.random() - 0.5) * 100 - i * 0.2,
-    silver: silverPrice + (Math.random() - 0.5) * 2 - i * 0.005,
-  }));
+
+  useEffect(() => {
+    fetchMetalsData();
+    const interval = setInterval(fetchMetalsData, 5 * 60 * 1000); // Refresh every 5 minutes
+    return () => clearInterval(interval);
+  }, [timeframe]);
 
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold text-gradient mb-2">Precious Metals Analysis</h1>
-          <p className="text-muted-foreground">Gold, silver, and inflation hedge analysis</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl font-bold text-gradient mb-2">Precious Metals Analysis</h1>
+            <p className="text-muted-foreground">Gold, silver, and inflation hedge analysis</p>
+            {lastUpdated && (
+              <p className="text-xs text-muted-foreground mt-1">Last updated: {lastUpdated}</p>
+            )}
+          </div>
+          <Button onClick={fetchMetalsData} disabled={loading} variant="outline" size="sm" className="gap-2">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
         <Navigation />
@@ -120,13 +181,13 @@ const Metals = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={history}>
+              <LineChart data={goldHistory.length > 0 ? goldHistory : []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
                 <YAxis stroke="hsl(var(--muted-foreground))" />
                 <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))' }} />
-                <Line type="monotone" dataKey="gold" stroke="hsl(var(--chart-1))" strokeWidth={2} name="Gold" />
-                <Line type="monotone" dataKey="silver" stroke="hsl(var(--chart-2))" strokeWidth={2} name="Silver" />
+                <Line type="monotone" dataKey="gold" stroke="hsl(var(--chart-1))" strokeWidth={2} name="Gold ($)" />
+                <Line type="monotone" dataKey="silver" stroke="hsl(var(--chart-2))" strokeWidth={2} name="Silver ($)" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
