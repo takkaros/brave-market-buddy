@@ -14,6 +14,8 @@ import Indicators from "./pages/Indicators";
 import EnhancedSettings from "./pages/EnhancedSettings";
 import PortfolioBuilder from "./pages/PortfolioBuilder";
 import Portfolio from "./pages/Portfolio";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +38,8 @@ const App = () => (
           <Route path="/portfolio-builder" element={<PortfolioBuilder />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/settings" element={<EnhancedSettings />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

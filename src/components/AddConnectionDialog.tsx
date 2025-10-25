@@ -55,7 +55,15 @@ const AddConnectionDialog = ({ onConnectionAdded }: Props) => {
       setLoading(true);
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!user) {
+        toast({
+          title: 'Not Authenticated',
+          description: 'Please log in to add connections',
+          variant: 'destructive',
+        });
+        window.location.href = '/login';
+        return;
+      }
 
       const { error } = await supabase.from('portfolio_connections').insert({
         user_id: user.id,
@@ -102,7 +110,15 @@ const AddConnectionDialog = ({ onConnectionAdded }: Props) => {
       setLoading(true);
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!user) {
+        toast({
+          title: 'Not Authenticated',
+          description: 'Please log in to add connections',
+          variant: 'destructive',
+        });
+        window.location.href = '/login';
+        return;
+      }
 
       const { data, error } = await supabase.from('portfolio_connections').insert({
         user_id: user.id,
