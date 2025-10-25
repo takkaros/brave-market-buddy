@@ -296,9 +296,9 @@ export default function Portfolio() {
     fetchHoldings();
     fetchWalletConnections();
 
-    // Set up realtime subscription
-    const channel = supabase
-      .channel('portfolio-changes')
+    // Set up realtime subscriptions
+    const holdingsChannel = supabase
+      .channel('portfolio-holdings-changes')
       .on(
         'postgres_changes',
         {
@@ -313,8 +313,25 @@ export default function Portfolio() {
       )
       .subscribe();
 
+    const connectionsChannel = supabase
+      .channel('portfolio-connections-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'portfolio_connections',
+          filter: `user_id=eq.${user?.id}`,
+        },
+        () => {
+          fetchWalletConnections();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(holdingsChannel);
+      supabase.removeChannel(connectionsChannel);
     };
   }, [user]);
 
@@ -346,7 +363,7 @@ export default function Portfolio() {
               <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
               Sync Prices
             </Button>
-            <AddHoldingDialog onAdded={fetchHoldings} />
+            <AddHoldingDialog onAdded={() => { fetchHoldings(); fetchWalletConnections(); }} />
           </div>
         </div>
 

@@ -45,17 +45,17 @@ serve(async (req) => {
     if (blockchainLower === 'bitcoin') {
       // Check if it's an xpub address
       if (walletAddress.startsWith('xpub') || walletAddress.startsWith('ypub') || walletAddress.startsWith('zpub')) {
-        console.log('sync-wallet-balance: Fetching xpub balance from BlockCypher');
-        // Use BlockCypher API for xpub
-        const btcResponse = await fetch(`https://api.blockcypher.com/v1/btc/main/addrs/${walletAddress}/balance`);
-        console.log('sync-wallet-balance: BlockCypher response status:', btcResponse.status);
+        console.log('sync-wallet-balance: Fetching xpub balance from Blockchain.info');
+        // Use Blockchain.info API for xpub - they support extended public keys
+        const btcResponse = await fetch(`https://blockchain.info/balance?active=${walletAddress}`);
+        console.log('sync-wallet-balance: Blockchain.info response status:', btcResponse.status);
         
         if (btcResponse.ok) {
           const btcData = await btcResponse.json();
-          console.log('sync-wallet-balance: BlockCypher response:', JSON.stringify(btcData));
+          console.log('sync-wallet-balance: Blockchain.info response:', JSON.stringify(btcData));
           
-          // BlockCypher returns balance in satoshis
-          const satoshis = btcData.balance || 0;
+          // Blockchain.info returns balance in satoshis
+          const satoshis = btcData[walletAddress]?.final_balance || 0;
           balance = satoshis / 100000000;
           
           console.log('sync-wallet-balance: Parsed balance:', balance, 'BTC');
@@ -83,7 +83,7 @@ serve(async (req) => {
           console.log('sync-wallet-balance: Created holding:', holdings[0]);
         } else {
           const errorText = await btcResponse.text();
-          console.error('sync-wallet-balance: BlockCypher API error:', errorText);
+          console.error('sync-wallet-balance: Blockchain.info API error:', errorText);
         }
       } else {
         // Regular Bitcoin address
@@ -113,16 +113,16 @@ serve(async (req) => {
         }
       }
     } else if (blockchainLower === 'ethereum') {
-      console.log('sync-wallet-balance: Fetching Ethereum balance from Etherscan');
+      console.log('sync-wallet-balance: Fetching Ethereum balance from Etherscan V2');
       const etherscanKey = Deno.env.get('ETHERSCAN_API_KEY');
       
       const ethResponse = await fetch(
-        `https://api.etherscan.io/api?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${etherscanKey}`
+        `https://api.etherscan.io/v2/api?chainid=1&module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${etherscanKey}`
       );
       
       if (ethResponse.ok) {
         const ethData = await ethResponse.json();
-        console.log('sync-wallet-balance: Etherscan response:', JSON.stringify(ethData));
+        console.log('sync-wallet-balance: Etherscan V2 response:', JSON.stringify(ethData));
         
         if (ethData.status === '1') {
           balance = parseInt(ethData.result || '0') / 1e18;
@@ -153,7 +153,7 @@ serve(async (req) => {
         }
       } else {
         const errorText = await ethResponse.text();
-        console.error('sync-wallet-balance: Etherscan HTTP error:', errorText);
+        console.error('sync-wallet-balance: Etherscan V2 HTTP error:', errorText);
       }
     } else if (blockchainLower === 'polygon') {
       console.log('sync-wallet-balance: Fetching Polygon balance from Polygonscan');
