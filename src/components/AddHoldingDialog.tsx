@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,6 @@ const holdingSchema = z.object({
   asset_symbol: z.string().min(1, 'Symbol is required').max(10),
   asset_name: z.string().min(1, 'Name is required').max(50),
   amount: z.string().min(1, 'Amount is required'),
-  price_usd: z.string().min(1, 'Price is required'),
 });
 
 interface Props {
@@ -38,8 +37,38 @@ export default function AddHoldingDialog({ onAdded }: Props) {
     asset_symbol: '',
     asset_name: '',
     amount: '',
-    price_usd: '',
   });
+  const [fetchingPrice, setFetchingPrice] = useState(false);
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+
+  const fetchPrice = async (symbol: string) => {
+    if (!symbol) return;
+    setFetchingPrice(true);
+    try {
+      const response = await fetch(
+        `https://min-api.cryptocompare.com/data/price?fsym=${symbol.toUpperCase()}&tsyms=USD`
+      );
+      const data = await response.json();
+      if (data.USD) {
+        setCurrentPrice(data.USD);
+      } else {
+        toast({
+          title: 'Price Not Found',
+          description: `Could not fetch price for ${symbol}`,
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch price:', error);
+      toast({
+        title: 'Price Fetch Failed',
+        description: 'Could not fetch current price',
+        variant: 'destructive',
+      });
+    } finally {
+      setFetchingPrice(false);
+    }
+  };
 
   const handleQuickSelect = (asset: { symbol: string; name: string }) => {
     setForm(prev => ({
@@ -47,7 +76,17 @@ export default function AddHoldingDialog({ onAdded }: Props) {
       asset_symbol: asset.symbol,
       asset_name: asset.name,
     }));
+    fetchPrice(asset.symbol);
   };
+
+  useEffect(() => {
+    if (form.asset_symbol && form.asset_symbol.length >= 2) {
+      const timer = setTimeout(() => {
+        fetchPrice(form.asset_symbol);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [form.asset_symbol]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,10 +102,20 @@ export default function AddHoldingDialog({ onAdded }: Props) {
 
     try {
       const validated = holdingSchema.parse(form);
+      
+      if (!currentPrice) {
+        toast({
+          title: 'Price Required',
+          description: 'Please wait for price to load or enter a valid symbol',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       setLoading(true);
 
       const amount = parseFloat(validated.amount);
-      const priceUsd = parseFloat(validated.price_usd);
+      const priceUsd = currentPrice;
       const valueUsd = amount * priceUsd;
 
       const { error } = await supabase.from('portfolio_holdings').insert({
@@ -86,7 +135,8 @@ export default function AddHoldingDialog({ onAdded }: Props) {
         description: `${validated.asset_symbol} added to your portfolio`,
       });
 
-      setForm({ asset_symbol: '', asset_name: '', amount: '', price_usd: '' });
+      setForm({ asset_symbol: '', asset_name: '', amount: '' });
+      setCurrentPrice(null);
       setOpen(false);
       onAdded();
     } catch (error: any) {
@@ -169,42 +219,51 @@ export default function AddHoldingDialog({ onAdded }: Props) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="amount">Amount</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="any"
-                  placeholder="0.5"
-                  value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="price">Price (USD)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="any"
-                  placeholder="42000"
-                  value={form.price_usd}
-                  onChange={(e) => setForm({ ...form, price_usd: e.target.value })}
-                  required
-                />
-              </div>
+            <div>
+              <Label htmlFor="amount">Amount</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="any"
+                placeholder="0.5"
+                value={form.amount}
+                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                required
+              />
             </div>
 
-            {form.amount && form.price_usd && (
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <p className="text-sm text-muted-foreground">Total Value</p>
-                <p className="text-xl font-bold">
-                  ${(parseFloat(form.amount) * parseFloat(form.price_usd)).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </p>
+            {fetchingPrice && (
+              <div className="p-3 bg-muted/30 rounded-lg flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <p className="text-sm">Fetching current price...</p>
+              </div>
+            )}
+
+            {currentPrice && !fetchingPrice && (
+              <div className="p-3 bg-primary/10 rounded-lg space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">Current Price</p>
+                  <p className="font-semibold">
+                    ${currentPrice.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </p>
+                </div>
+                {form.amount && (
+                  <>
+                    <div className="h-px bg-border" />
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">Total Value</p>
+                      <p className="text-xl font-bold">
+                        ${(parseFloat(form.amount) * currentPrice).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

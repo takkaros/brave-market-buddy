@@ -8,7 +8,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TrendingUp, TrendingDown, Wallet, DollarSign, Target, RefreshCw, Plus } from 'lucide-react';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { supabase } from '@/integrations/supabase/client';
-import AddHoldingDialog from '@/components/AddHoldingDialog';
+import AddConnectionDialog from '@/components/AddConnectionDialog';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4'];
 
@@ -83,7 +83,7 @@ const UnifiedDashboard = () => {
             <p className="text-muted-foreground">Real-time market data + your holdings in one place</p>
           </div>
           <div className="flex gap-2">
-            <AddHoldingDialog onAdded={fetchPortfolio} />
+            <AddConnectionDialog onConnectionAdded={fetchPortfolio} />
             <Button onClick={() => { fetchMarketData(); fetchPortfolio(); }} variant="outline" size="sm">
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
@@ -250,7 +250,7 @@ const UnifiedDashboard = () => {
                     <p className="text-sm text-muted-foreground mb-4">
                       Add your first holding to start tracking your portfolio
                     </p>
-                    <AddHoldingDialog onAdded={fetchPortfolio} />
+                    <AddConnectionDialog onConnectionAdded={fetchPortfolio} />
                   </div>
                 )}
               </CardContent>
