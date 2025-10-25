@@ -52,11 +52,22 @@ interface WalletConnection {
   is_active: boolean;
 }
 
+interface ExchangeConnection {
+  id: string;
+  name: string;
+  exchange_name: string;
+  api_key: string;
+  api_secret: string;
+  last_synced_at: string | null;
+  is_active: boolean;
+}
+
 export default function Portfolio() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [walletConnections, setWalletConnections] = useState<WalletConnection[]>([]);
+  const [exchangeConnections, setExchangeConnections] = useState<ExchangeConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncingWallet, setSyncingWallet] = useState<string | null>(null);
@@ -104,6 +115,24 @@ export default function Portfolio() {
     }
   };
 
+  const fetchExchangeConnections = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('portfolio_connections')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('connection_type', 'exchange')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setExchangeConnections(data || []);
+    } catch (error: any) {
+      console.error('Failed to fetch exchange connections:', error);
+    }
+  };
+
   const syncWallet = async (connectionId: string, blockchain: string, walletAddress: string) => {
     setSyncingWallet(connectionId);
     try {
@@ -138,7 +167,41 @@ export default function Portfolio() {
     }
   };
 
-  const deleteWalletConnection = async (connectionId: string) => {
+  const syncExchange = async (connectionId: string, exchangeName: string, apiKey: string, apiSecret: string) => {
+    setSyncingWallet(connectionId);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-exchange-balance', {
+        body: { connectionId, exchangeName, apiKey, apiSecret }
+      });
+
+      if (error) {
+        console.error('Sync error:', error);
+        toast({
+          title: 'Sync Failed',
+          description: error.message || 'Failed to sync exchange balance',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Exchange Synced',
+          description: `${exchangeName} synced successfully`,
+        });
+        fetchHoldings();
+        fetchExchangeConnections();
+      }
+    } catch (error: any) {
+      console.error('Sync failed:', error);
+      toast({
+        title: 'Sync Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setSyncingWallet(null);
+    }
+  };
+
+  const deleteConnection = async (connectionId: string, isExchange = false) => {
     try {
       // Delete all holdings associated with this connection
       await supabase
@@ -156,11 +219,15 @@ export default function Portfolio() {
 
       toast({
         title: 'Connection Deleted',
-        description: 'Wallet connection and associated holdings removed',
+        description: 'Connection and associated holdings removed',
       });
       
       fetchHoldings();
-      fetchWalletConnections();
+      if (isExchange) {
+        fetchExchangeConnections();
+      } else {
+        fetchWalletConnections();
+      }
     } catch (error: any) {
       toast({
         title: 'Delete Failed',
@@ -295,6 +362,7 @@ export default function Portfolio() {
   useEffect(() => {
     fetchHoldings();
     fetchWalletConnections();
+    fetchExchangeConnections();
 
     // Set up realtime subscriptions
     const holdingsChannel = supabase
@@ -325,6 +393,7 @@ export default function Portfolio() {
         },
         () => {
           fetchWalletConnections();
+          fetchExchangeConnections();
         }
       )
       .subscribe();
@@ -579,7 +648,74 @@ export default function Portfolio() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => deleteWalletConnection(connection.id)}
+                            onClick={() => deleteConnection(connection.id, false)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Exchange Connections */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="w-5 h-5" />
+                  Exchange Connections
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {exchangeConnections.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Building className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                    <p>No exchange connections yet</p>
+                    <p className="text-sm">Add API connections from the "Add Holding" button above</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {exchangeConnections.map((connection) => (
+                      <div
+                        key={connection.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Building className="w-5 h-5" />
+                          <div>
+                            <p className="font-medium">{connection.name}</p>
+                            <p className="text-sm text-muted-foreground capitalize">
+                              {connection.exchange_name}
+                            </p>
+                            {connection.last_synced_at && (
+                              <p className="text-xs text-muted-foreground">
+                                Last synced: {new Date(connection.last_synced_at).toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => syncExchange(
+                              connection.id,
+                              connection.exchange_name,
+                              connection.api_key,
+                              connection.api_secret
+                            )}
+                            disabled={syncingWallet === connection.id}
+                          >
+                            <RefreshCw className={`w-4 h-4 mr-2 ${syncingWallet === connection.id ? 'animate-spin' : ''}`} />
+                            {syncingWallet === connection.id ? 'Syncing...' : 'Sync'}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteConnection(connection.id, true)}
                             className="text-destructive hover:text-destructive"
                           >
                             <Trash2 className="w-4 h-4" />

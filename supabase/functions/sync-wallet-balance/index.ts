@@ -47,8 +47,8 @@ serve(async (req) => {
       console.log('🟠 BITCOIN SYNC INITIATED');
       // Check if it's an xpub address
       if (walletAddress.startsWith('xpub') || walletAddress.startsWith('ypub') || walletAddress.startsWith('zpub')) {
-        console.log('📡 Fetching XPUB balance from Blockchain.info');
-        const apiUrl = `https://blockchain.info/balance?active=${walletAddress}`;
+        console.log('📡 Fetching XPUB balance from BlockCypher API');
+        const apiUrl = `https://api.blockcypher.com/v1/btc/main/addrs/${walletAddress}/balance`;
         console.log('🌐 API URL:', apiUrl);
         
         const btcResponse = await fetch(apiUrl);
@@ -59,8 +59,8 @@ serve(async (req) => {
           const btcData = await btcResponse.json();
           console.log('📦 Raw API response:', JSON.stringify(btcData, null, 2));
           
-          // Blockchain.info returns balance in satoshis
-          const satoshis = btcData[walletAddress]?.final_balance || 0;
+          // BlockCypher returns balance in satoshis
+          const satoshis = btcData.balance || 0;
           balance = satoshis / 100000000;
           
           console.log('💰 Parsed balance:', balance, 'BTC (', satoshis, 'satoshis )');
@@ -89,8 +89,8 @@ serve(async (req) => {
           console.log('✅ Created BTC holding:', JSON.stringify(holdings[0], null, 2));
         } else {
           const errorText = await btcResponse.text();
-          console.error('❌ Blockchain.info API ERROR:', errorText);
-          console.error('❌ This may indicate the xpub format is not supported by blockchain.info');
+          console.error('❌ BlockCypher API ERROR:', errorText);
+          console.error('❌ Status:', btcResponse.status);
         }
       } else {
         // Regular Bitcoin address
