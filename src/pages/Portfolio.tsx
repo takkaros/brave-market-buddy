@@ -18,7 +18,8 @@ import {
   Building,
   Coins,
   Home,
-  Calculator
+  Calculator,
+  Link as LinkIcon
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -42,12 +43,23 @@ interface Holding {
   purchase_date?: string;
 }
 
+interface WalletConnection {
+  id: string;
+  name: string;
+  blockchain: string;
+  wallet_address: string;
+  last_synced_at: string | null;
+  is_active: boolean;
+}
+
 export default function Portfolio() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [holdings, setHoldings] = useState<Holding[]>([]);
+  const [walletConnections, setWalletConnections] = useState<WalletConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncingWallet, setSyncingWallet] = useState<string | null>(null);
 
   const fetchHoldings = async () => {
     if (!user) return;
@@ -71,6 +83,90 @@ export default function Portfolio() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchWalletConnections = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('portfolio_connections')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('connection_type', 'wallet')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setWalletConnections(data || []);
+    } catch (error: any) {
+      console.error('Failed to fetch wallet connections:', error);
+    }
+  };
+
+  const syncWallet = async (connectionId: string, blockchain: string, walletAddress: string) => {
+    setSyncingWallet(connectionId);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-wallet-balance', {
+        body: { connectionId, blockchain, walletAddress }
+      });
+
+      if (error) {
+        console.error('Sync error:', error);
+        toast({
+          title: 'Sync Failed',
+          description: error.message || 'Failed to sync wallet balance',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Wallet Synced',
+          description: `${blockchain} wallet synced successfully`,
+        });
+        fetchHoldings();
+        fetchWalletConnections();
+      }
+    } catch (error: any) {
+      console.error('Sync failed:', error);
+      toast({
+        title: 'Sync Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setSyncingWallet(null);
+    }
+  };
+
+  const deleteWalletConnection = async (connectionId: string) => {
+    try {
+      // Delete all holdings associated with this connection
+      await supabase
+        .from('portfolio_holdings')
+        .delete()
+        .eq('connection_id', connectionId);
+
+      // Delete the connection
+      const { error } = await supabase
+        .from('portfolio_connections')
+        .delete()
+        .eq('id', connectionId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Connection Deleted',
+        description: 'Wallet connection and associated holdings removed',
+      });
+      
+      fetchHoldings();
+      fetchWalletConnections();
+    } catch (error: any) {
+      toast({
+        title: 'Delete Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -198,6 +294,7 @@ export default function Portfolio() {
 
   useEffect(() => {
     fetchHoldings();
+    fetchWalletConnections();
 
     // Set up realtime subscription
     const channel = supabase
@@ -325,6 +422,10 @@ export default function Portfolio() {
               <Calculator className="w-4 h-4" />
               Tax Helper
             </TabsTrigger>
+            <TabsTrigger value="connections" className="gap-2">
+              <LinkIcon className="w-4 h-4" />
+              Connections
+            </TabsTrigger>
           </TabsList>
 
           {/* All Assets */}
@@ -403,6 +504,76 @@ export default function Portfolio() {
           {/* Tax Helper */}
           <TabsContent value="tax">
             <TaxCalculator holdings={holdings} />
+          </TabsContent>
+
+          {/* Connections */}
+          <TabsContent value="connections">
+            <Card>
+              <CardHeader>
+                <CardTitle>Wallet Connections</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {walletConnections.length === 0 ? (
+                  <div className="text-center py-12">
+                    <LinkIcon className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-lg font-semibold mb-2">No Wallet Connections</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Connect a crypto wallet to automatically sync your holdings
+                    </p>
+                    <AddHoldingDialog onAdded={() => { fetchHoldings(); fetchWalletConnections(); }} />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {walletConnections.map((connection) => (
+                      <div key={connection.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <Wallet className="w-5 h-5" />
+                            <div>
+                              <p className="font-semibold">{connection.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                <Badge variant="outline" className="mr-2">{connection.blockchain}</Badge>
+                                {connection.wallet_address.slice(0, 10)}...{connection.wallet_address.slice(-8)}
+                              </p>
+                              {connection.last_synced_at && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Last synced: {new Date(connection.last_synced_at).toLocaleString()}
+                                </p>
+                              )}
+                              {!connection.last_synced_at && (
+                                <p className="text-xs text-destructive mt-1">
+                                  Never synced - click sync to fetch your balance
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => syncWallet(connection.id, connection.blockchain, connection.wallet_address)}
+                            disabled={syncingWallet === connection.id}
+                          >
+                            <RefreshCw className={`w-4 h-4 mr-2 ${syncingWallet === connection.id ? 'animate-spin' : ''}`} />
+                            {syncingWallet === connection.id ? 'Syncing...' : 'Sync'}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteWalletConnection(connection.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Chart View */}
