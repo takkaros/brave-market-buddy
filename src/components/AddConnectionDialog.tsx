@@ -149,7 +149,8 @@ const AddConnectionDialog = ({ onConnectionAdded }: Props) => {
       // Trigger initial sync
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData.session) {
-        await supabase.functions.invoke('sync-wallet-balance', {
+        console.log('Triggering wallet sync for:', data.id);
+        const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-wallet-balance', {
           body: {
             connectionId: data.id,
             blockchain: validated.blockchain,
@@ -159,12 +160,34 @@ const AddConnectionDialog = ({ onConnectionAdded }: Props) => {
             Authorization: `Bearer ${sessionData.session.access_token}`,
           },
         });
-      }
 
-      toast({
-        title: 'Wallet Added',
-        description: `${validated.blockchain} wallet connected successfully`,
-      });
+        console.log('Sync result:', syncResult);
+        if (syncError) {
+          console.error('Sync error:', syncError);
+          toast({
+            title: 'Wallet Added but Sync Failed',
+            description: `Wallet connected but balance sync failed: ${syncError.message}`,
+            variant: 'destructive',
+          });
+        } else if (syncResult && !syncResult.success) {
+          console.error('Sync failed:', syncResult.error);
+          toast({
+            title: 'Wallet Added but Sync Failed',
+            description: `Wallet connected but balance sync failed: ${syncResult.error}`,
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Wallet Added & Synced',
+            description: `${validated.blockchain} wallet connected and synced successfully`,
+          });
+        }
+      } else {
+        toast({
+          title: 'Wallet Added',
+          description: `${validated.blockchain} wallet connected (sync will happen on next login)`,
+        });
+      }
 
       setWalletForm({ name: '', blockchain: '', wallet_address: '' });
       setOpen(false);

@@ -35,37 +35,63 @@ serve(async (req) => {
 
     // Fetch balance based on blockchain
     if (blockchain === 'Bitcoin') {
-      // Use blockchain.info API for Bitcoin
-      const btcResponse = await fetch(`https://blockchain.info/balance?active=${walletAddress}`);
-      if (btcResponse.ok) {
-        const btcData = await btcResponse.json();
-        const satoshis = btcData[walletAddress]?.final_balance || 0;
-        balance = satoshis / 100000000; // Convert satoshis to BTC
-        
-        // Get BTC price
-        const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
-          body: { symbol: 'BTC' }
-        });
-        const btcPrice = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
-        
-        holdings = [{
-          asset_symbol: 'BTC',
-          asset_name: 'Bitcoin',
-          amount: balance,
-          price_usd: btcPrice,
-          value_usd: balance * btcPrice,
-        }];
+      // Check if it's an xpub address
+      if (walletAddress.startsWith('xpub') || walletAddress.startsWith('ypub') || walletAddress.startsWith('zpub')) {
+        // Use blockchain.info xpub API
+        const btcResponse = await fetch(`https://blockchain.info/multiaddr?active=${walletAddress}`);
+        if (btcResponse.ok) {
+          const btcData = await btcResponse.json();
+          const satoshis = btcData.wallet?.final_balance || 0;
+          balance = satoshis / 100000000;
+          
+          // Get BTC price
+          const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
+            body: { symbol: 'BTC' }
+          });
+          const btcPrice = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
+          
+          holdings = [{
+            asset_symbol: 'BTC',
+            asset_name: 'Bitcoin',
+            amount: balance,
+            price_usd: btcPrice,
+            value_usd: balance * btcPrice,
+          }];
+          console.log(`Synced Bitcoin xpub: ${balance} BTC = $${balance * btcPrice}`);
+        }
+      } else {
+        // Regular Bitcoin address
+        const btcResponse = await fetch(`https://blockchain.info/balance?active=${walletAddress}`);
+        if (btcResponse.ok) {
+          const btcData = await btcResponse.json();
+          const satoshis = btcData[walletAddress]?.final_balance || 0;
+          balance = satoshis / 100000000;
+          
+          // Get BTC price
+          const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
+            body: { symbol: 'BTC' }
+          });
+          const btcPrice = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
+          
+          holdings = [{
+            asset_symbol: 'BTC',
+            asset_name: 'Bitcoin',
+            amount: balance,
+            price_usd: btcPrice,
+            value_usd: balance * btcPrice,
+          }];
+          console.log(`Synced Bitcoin address: ${balance} BTC = $${balance * btcPrice}`);
+        }
       }
     } else if (blockchain === 'Ethereum') {
-      // Use Etherscan API for Ethereum
-      const etherscanKey = Deno.env.get('ETHERSCAN_API_KEY');
-      if (etherscanKey) {
-        const ethResponse = await fetch(
-          `https://api.etherscan.io/api?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${etherscanKey}`
-        );
-        if (ethResponse.ok) {
-          const ethData = await ethResponse.json();
-          balance = parseInt(ethData.result || '0') / 1e18; // Convert wei to ETH
+      // Use public Etherscan API (no key required, but rate limited)
+      const ethResponse = await fetch(
+        `https://api.etherscan.io/api?module=account&action=balance&address=${walletAddress}&tag=latest`
+      );
+      if (ethResponse.ok) {
+        const ethData = await ethResponse.json();
+        if (ethData.status === '1') {
+          balance = parseInt(ethData.result || '0') / 1e18;
           
           // Get ETH price
           const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
@@ -80,6 +106,9 @@ serve(async (req) => {
             price_usd: ethPrice,
             value_usd: balance * ethPrice,
           }];
+          console.log(`Synced Ethereum address: ${balance} ETH = $${balance * ethPrice}`);
+        } else {
+          console.error('Etherscan API error:', ethData.message);
         }
       }
     }

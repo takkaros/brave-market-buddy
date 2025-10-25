@@ -20,24 +20,44 @@ const Portfolio = () => {
     try {
       setLoading(true);
       
+      // Check authentication
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.log('No authenticated user found');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Fetching portfolio data for user:', user.id);
+      
       const { data: holdingsData, error: holdingsError } = await supabase
         .from('portfolio_holdings')
         .select('*')
+        .eq('user_id', user.id)
         .order('value_usd', { ascending: false });
 
       if (holdingsError) throw holdingsError;
 
       const { data: connectionsData, error: connectionsError } = await supabase
         .from('portfolio_connections')
-        .select('*');
+        .select('*')
+        .eq('user_id', user.id);
 
       if (connectionsError) throw connectionsError;
+
+      console.log('Portfolio data fetched:', {
+        holdings: holdingsData?.length || 0,
+        connections: connectionsData?.length || 0,
+        holdingsData: holdingsData,
+      });
 
       setHoldings(holdingsData || []);
       setConnections(connectionsData || []);
       
-      const total = (holdingsData || []).reduce((sum, h) => sum + (h.value_usd || 0), 0);
+      const total = (holdingsData || []).reduce((sum, h) => sum + (Number(h.value_usd) || 0), 0);
       setTotalValue(total);
+      
+      console.log('Total portfolio value:', total);
     } catch (error: any) {
       console.error('Error fetching portfolio:', error);
       toast({
