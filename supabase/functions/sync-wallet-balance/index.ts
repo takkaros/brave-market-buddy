@@ -42,17 +42,17 @@ serve(async (req) => {
     if (blockchain === 'Bitcoin') {
       // Check if it's an xpub address
       if (walletAddress.startsWith('xpub') || walletAddress.startsWith('ypub') || walletAddress.startsWith('zpub')) {
-        console.log('sync-wallet-balance: Fetching xpub balance from blockchain.info');
-        // Use blockchain.info xpub API
-        const btcResponse = await fetch(`https://blockchain.info/multiaddr?active=${walletAddress}`);
-        console.log('sync-wallet-balance: blockchain.info response status:', btcResponse.status);
+        console.log('sync-wallet-balance: Fetching xpub balance from BlockCypher');
+        // Use BlockCypher API for xpub
+        const btcResponse = await fetch(`https://api.blockcypher.com/v1/btc/main/addrs/${walletAddress}/balance`);
+        console.log('sync-wallet-balance: BlockCypher response status:', btcResponse.status);
         
         if (btcResponse.ok) {
           const btcData = await btcResponse.json();
-          console.log('sync-wallet-balance: blockchain.info response:', JSON.stringify(btcData));
+          console.log('sync-wallet-balance: BlockCypher response:', JSON.stringify(btcData));
           
-          // blockchain.info multiaddr returns final_balance directly for xpub
-          const satoshis = btcData.wallet?.final_balance || btcData.final_balance || 0;
+          // BlockCypher returns balance in satoshis
+          const satoshis = btcData.balance || 0;
           balance = satoshis / 100000000;
           
           console.log('sync-wallet-balance: Parsed balance:', balance, 'BTC');
@@ -80,7 +80,7 @@ serve(async (req) => {
           console.log('sync-wallet-balance: Created holding:', holdings[0]);
         } else {
           const errorText = await btcResponse.text();
-          console.error('sync-wallet-balance: blockchain.info API error:', errorText);
+          console.error('sync-wallet-balance: BlockCypher API error:', errorText);
         }
       } else {
         // Regular Bitcoin address
