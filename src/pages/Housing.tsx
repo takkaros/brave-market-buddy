@@ -78,10 +78,10 @@ const Housing = () => {
   }, []);
 
   const regionalData = [
-    { region: 'West', price: 650000, change: -12 },
-    { region: 'Northeast', price: 480000, change: -6 },
-    { region: 'South', price: 350000, change: -4 },
-    { region: 'Midwest', price: 280000, change: -2 },
+    { region: 'Limassol', price: 320000, change: -1.8 },
+    { region: 'Nicosia', price: 210000, change: -2.5 },
+    { region: 'Paphos', price: 250000, change: -1.2 },
+    { region: 'Larnaca', price: 195000, change: -1.0 },
   ];
 
   const getSignal = () => {
@@ -301,84 +301,90 @@ const Housing = () => {
                     Current Market Conditions
                   </h4>
                   <p className="text-muted-foreground">
-                    Housing affordability is at crisis levels (index: {affordability}) due to combination of:
-                    (1) Still-elevated prices from 2020-2022 bubble, (2) Mortgage rates at {mortgageRate}% 
-                    (vs 3% in 2021), and (3) Stagnant wage growth. Monthly payment on median home is now 
-                    $2,800 vs $1,400 in 2020 - essentially doubling the cost of homeownership.
+                    Cyprus housing market shows moderate unaffordability (index: {affordability}) driven by:
+                    (1) Foreign investor demand (Russian, UK, Middle East buyers), (2) Limited new construction supply,
+                    and (3) Strong cash-buyer presence reducing mortgage sensitivity. Unlike larger markets, 
+                    Cyprus prices are sticky due to foreign capital flows and citizenship-by-investment programs.
                   </p>
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-base mb-2">📉 Why Prices Are Sticky</h4>
+                  <h4 className="font-semibold text-base mb-2">📉 Why Cyprus Prices Are Extra Sticky</h4>
                   <ul className="space-y-2 ml-4 text-muted-foreground">
-                    <li>• Most homeowners locked in 3-4% mortgages - no incentive to sell</li>
-                    <li>• Low inventory ({inventory} months) prevents major price drops</li>
-                    <li>• Sellers would rather wait than take a loss</li>
-                    <li>• No mass foreclosures like 2008 (lending standards much stricter)</li>
+                    <li>• 40-50% of purchases are cash buyers (foreign investors) - no mortgage sensitivity</li>
+                    <li>• Small market means limited inventory - sellers have pricing power</li>
+                    <li>• Citizenship/residency programs attract wealthy buyers regardless of rates</li>
+                    <li>• Less mortgage-driven than U.S./UK - local buyers often pay cash or large deposits</li>
+                    <li>• Tourist rental income provides yield buffer for investors</li>
                   </ul>
                 </div>
 
                 <div>
                   <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                     <DollarSign className="w-5 h-5 text-risk-moderate" />
-                    The Math on Buying Now
+                    Cyprus Market Reality Check
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-muted-foreground">
                     <div className="bg-risk-elevated/10 p-4 rounded">
-                      <p className="font-semibold text-foreground mb-2">If You Buy Today:</p>
-                      <p>• Median home: $420k</p>
-                      <p>• 20% down: $84k</p>
-                      <p>• Monthly payment: $2,800</p>
-                      <p>• Stuck with {mortgageRate}% rate</p>
+                      <p className="font-semibold text-foreground mb-2">Current Situation:</p>
+                      <p>• Median Limassol: €320k</p>
+                      <p>• Median Nicosia: €210k</p>
+                      <p>• Foreign buyer competition</p>
+                      <p>• Limited new supply</p>
+                      <p>• Sticky prices (slow declines)</p>
                     </div>
                     <div className="bg-risk-low/10 p-4 rounded">
-                      <p className="font-semibold text-foreground mb-2">If You Wait 6-12 Months:</p>
-                      <p>• Potential 5-10% price drop</p>
-                      <p>• Rates may fall to 6%</p>
-                      <p>• Payment could be $2,300</p>
-                      <p>• Save $500/month = $6k/year</p>
+                      <p className="font-semibold text-foreground mb-2">Price Outlook:</p>
+                      <p>• Expect 2-4% decline (not 10-15%)</p>
+                      <p>• Adjustments will take 12-24 months</p>
+                      <p>• Coastal areas most resilient</p>
+                      <p>• Rental yields: 4-6% possible</p>
+                      <p>• Smaller market = slower moves</p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-base mb-2">✅ When Housing Becomes a Buy</h4>
-                  <p className="text-muted-foreground mb-2">You'll know it's time when you see:</p>
+                  <h4 className="font-semibold text-base mb-2">✅ When Cyprus Housing Becomes More Attractive</h4>
+                  <p className="text-muted-foreground mb-2">Watch for these modest improvements:</p>
                   <ul className="space-y-1 ml-4 text-muted-foreground">
-                    <li>1. Mortgage rates fall below 6% (Fed rate cuts)</li>
-                    <li>2. Prices drop another 5-10% from current levels</li>
-                    <li>3. Inventory rises above 4 months (more choices)</li>
-                    <li>4. Affordability index improves to 105+</li>
-                    <li>5. Sellers start getting desperate (price cuts, concessions)</li>
+                    <li>1. Prices stabilize or drop 2-4% (don't expect 10%+ crashes)</li>
+                    <li>2. More properties staying on market 6+ months</li>
+                    <li>3. Sellers offering minor concessions (furniture, repairs)</li>
+                    <li>4. ECB rate cuts improve local mortgage rates</li>
+                    <li>5. New construction projects delayed/cancelled (supply tightening eases)</li>
                   </ul>
+                  <p className="text-muted-foreground mt-2 italic">
+                    Note: Cyprus won't see dramatic price crashes due to foreign cash buyers and small market dynamics.
+                  </p>
                 </div>
 
                 <div>
                   <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-risk-elevated" />
-                    Exception: When to Buy Anyway
+                    Cyprus-Specific Buying Considerations
                   </h4>
-                  <p className="text-muted-foreground mb-2">Consider buying now despite bad timing if:</p>
+                  <p className="text-muted-foreground mb-2">Cyprus market favors buyers who:</p>
                   <ul className="space-y-1 ml-4 text-muted-foreground">
-                    <li>• You're relocating for work (no choice)</li>
-                    <li>• Renting costs more than buying in your market</li>
-                    <li>• You plan to stay 7-10+ years (can ride out downturn)</li>
-                    <li>• You found an underpriced gem or distressed sale</li>
-                    <li>• Life circumstances demand stability (kids, schools)</li>
+                    <li>• Seek residency/citizenship benefits (if programs active)</li>
+                    <li>• Can pay mostly cash (avoid high mortgage rates)</li>
+                    <li>• Want rental income (4-6% yields in tourist areas)</li>
+                    <li>• Plan to hold 10+ years (weather small downturns)</li>
+                    <li>• Target secondary cities (Larnaca, Paphos) over Limassol</li>
                   </ul>
                   <p className="text-muted-foreground mt-2">
-                    In these cases: Negotiate hard, get seller concessions, and you can always refinance if rates drop.
+                    Remember: Smaller markets move slower. Price declines will be 2-4% over 18-24 months, not sudden 15% drops.
                   </p>
                 </div>
 
                 <div className="bg-primary/10 border-l-4 border-primary p-4 rounded">
-                  <p className="font-semibold mb-2">Bottom Line for Housing:</p>
+                  <p className="font-semibold mb-2">Bottom Line for Cyprus Housing:</p>
                   <p className="text-muted-foreground">
                     {signal === 'BUY' ? 
-                      "Market conditions are favorable. Rates are reasonable, affordability is improving, and inventory is balanced. Good time for buyers with long-term horizon." :
+                      "Conditions are reasonable for Cyprus market. Foreign demand stable, rental yields attractive. Good for long-term holders with cash/large deposits." :
                       signal === 'MONITOR' ?
-                      "Market is in transition. Prices softening but not compelling yet. Continue saving for larger down payment. Expected 6-12 months before optimal entry." :
-                      "Housing is EXPENSIVE. Unless you must buy (life circumstances), wait. Prices need 10-15% correction and/or rates need to fall to 6% before risk/reward improves. Rent and save aggressively for 12-18 months."}
+                      "Cyprus market is cooling slowly. Prices may soften 2-4% over 12-18 months. Continue monitoring—no urgency but no crash expected either." :
+                      "Cyprus housing is moderately overpriced but won't crash like larger markets. If you can wait 12-18 months, expect small (2-4%) price improvements. Foreign investor demand provides price floor. Unlike U.S., don't expect 10-15% drops—Cyprus adjusts slowly due to smaller, less mortgage-driven market."}
                   </p>
                 </div>
               </div>
