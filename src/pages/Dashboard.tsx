@@ -5,9 +5,13 @@ import RiskGauge from '@/components/RiskGauge';
 import CategoryCard from '@/components/CategoryCard';
 import AIAnalysisPanel from '@/components/AIAnalysisPanel';
 import RiskTrendChart from '@/components/RiskTrendChart';
+import FearGreedGauge from '@/components/FearGreedGauge';
+import AssetAllocationChart from '@/components/AssetAllocationChart';
+import KeyIndicatorsChart from '@/components/KeyIndicatorsChart';
+import InfoTooltip from '@/components/InfoTooltip';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Settings, TrendingUp } from 'lucide-react';
+import { MessageSquare, Settings, TrendingUp, BarChart3 } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -26,6 +30,15 @@ const Dashboard = () => {
             <p className="text-muted-foreground">Real-time economic risk analysis with AI-powered investment guidance</p>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/indicators')}
+              className="gap-2"
+            >
+              <BarChart3 className="w-4 h-4" />
+              All Indicators
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -61,8 +74,26 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Main Risk Gauge */}
-        <RiskGauge score={score} previousScore={previousScore} />
+        {/* Main Metrics Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <RiskGauge score={score} previousScore={previousScore} />
+          </div>
+          <div className="space-y-6">
+            <FearGreedGauge value={mockData.fearGreedIndex} />
+          </div>
+        </div>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <KeyIndicatorsChart indicators={{
+            vix: mockData.vix,
+            yieldCurve10y2y: mockData.yieldCurve10y2y,
+            unemploymentRate: mockData.unemploymentRate,
+            fearGreedIndex: mockData.fearGreedIndex,
+          }} />
+          <AssetAllocationChart riskScore={score} />
+        </div>
 
         {/* AI Analysis */}
         <AIAnalysisPanel 
