@@ -44,6 +44,7 @@ serve(async (req) => {
     if (exchangeLower === 'binance') {
       console.log('🟡 BINANCE SYNC INITIATED');
       
+      // 1. FETCH SPOT BALANCES
       const timestamp = Date.now();
       const queryString = `timestamp=${timestamp}`;
       const signature = createHmac('sha256', apiSecret)
@@ -51,7 +52,7 @@ serve(async (req) => {
         .digest('hex');
       
       const apiUrl = `https://api.binance.com/api/v3/account?${queryString}&signature=${signature}`;
-      console.log('🌐 Calling Binance API...');
+      console.log('🌐 Calling Binance Spot API...');
       
       const binanceResponse = await fetch(apiUrl, {
         headers: {
@@ -59,25 +60,25 @@ serve(async (req) => {
         }
       });
       
-      console.log('📊 Response status:', binanceResponse.status);
+      console.log('📊 Spot Response status:', binanceResponse.status);
       
       if (binanceResponse.ok) {
         const binanceData = await binanceResponse.json();
-        console.log('📦 Fetched', binanceData.balances?.length || 0, 'balances');
+        console.log('📦 Fetched', binanceData.balances?.length || 0, 'spot balances');
         
         // Filter out zero balances
         const nonZeroBalances = binanceData.balances.filter((b: any) => 
           parseFloat(b.free) > 0 || parseFloat(b.locked) > 0
         );
         
-        console.log('💰 Non-zero balances:', nonZeroBalances.length);
+        console.log('💰 Non-zero spot balances:', nonZeroBalances.length);
         
         // Get prices for each asset
         for (const balance of nonZeroBalances) {
           const amount = parseFloat(balance.free) + parseFloat(balance.locked);
           const symbol = balance.asset;
           
-          console.log(`📈 Processing ${symbol}: ${amount}`);
+          console.log(`📈 Processing spot ${symbol}: ${amount}`);
           
           // Get price from CryptoCompare
           const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
@@ -95,10 +96,68 @@ serve(async (req) => {
           });
         }
         
-        console.log('✅ Created', holdings.length, 'holdings from Binance');
+        console.log('✅ Created', holdings.length, 'holdings from spot balances');
       } else {
         const errorText = await binanceResponse.text();
-        console.error('❌ Binance API ERROR:', errorText);
+        console.error('❌ Binance Spot API ERROR:', errorText);
+      }
+
+      // 2. FETCH SAVINGS/EARN BALANCES (Flexible + Locked)
+      console.log('💎 Fetching Binance Savings/Earn...');
+      const savingsTimestamp = Date.now();
+      const savingsQueryString = `timestamp=${savingsTimestamp}`;
+      const savingsSignature = createHmac('sha256', apiSecret)
+        .update(savingsQueryString)
+        .digest('hex');
+      
+      const savingsUrl = `https://api.binance.com/sapi/v1/lending/union/account?${savingsQueryString}&signature=${savingsSignature}`;
+      
+      const savingsResponse = await fetch(savingsUrl, {
+        headers: {
+          'X-MBX-APIKEY': apiKey
+        }
+      });
+
+      console.log('📊 Savings Response status:', savingsResponse.status);
+
+      if (savingsResponse.ok) {
+        const savingsData = await savingsResponse.json();
+        console.log('📦 Savings data:', JSON.stringify(savingsData, null, 2));
+        
+        // Process flexible savings
+        if (savingsData.positionAmountVos && savingsData.positionAmountVos.length > 0) {
+          console.log('🔄 Processing', savingsData.positionAmountVos.length, 'savings positions');
+          
+          for (const position of savingsData.positionAmountVos) {
+            const amount = parseFloat(position.amount || 0);
+            const symbol = position.asset;
+            
+            if (amount > 0) {
+              console.log(`📈 Processing savings ${symbol}: ${amount}`);
+              
+              // Get price from CryptoCompare
+              const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
+                body: { symbol }
+              });
+              
+              const price = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
+              
+              holdings.push({
+                asset_symbol: symbol,
+                asset_name: `${position.asset} (Savings)`,
+                amount,
+                price_usd: price,
+                value_usd: amount * price,
+              });
+            }
+          }
+        }
+        
+        console.log('✅ Total holdings after savings:', holdings.length);
+      } else {
+        const savingsError = await savingsResponse.text();
+        console.error('⚠️ Binance Savings API ERROR (non-critical):', savingsError);
+        console.log('💡 Continuing with spot balances only...');
       }
     } else if (exchangeLower === 'coinbase') {
       console.log('🔵 COINBASE SYNC - NOT IMPLEMENTED YET');
