@@ -25,35 +25,45 @@ const AIChat = () => {
     setInput('');
     setLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse: Message = {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: [...messages, userMessage],
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.data.choices?.[0]?.message) {
+        const aiResponse: Message = {
+          role: 'assistant',
+          content: data.data.choices[0].message.content,
+        };
+        setMessages(prev => [...prev, aiResponse]);
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      const errorMessage: Message = {
         role: 'assistant',
-        content: `Great question! Based on current market conditions (Risk Score: 42):
-
-Given you're 32 with $50k saved, here's my recommendation:
-
-🎯 RECOMMENDED ALLOCATION:
-- Stocks (S&P 500 index): 60% ($30k)
-- Bonds (intermediate-term): 20% ($10k)
-- Cash (emergency fund): 15% ($7.5k)
-- Crypto (BTC/ETH): 5% ($2.5k)
-
-⏰ EXECUTION PLAN:
-Week 1: Move $15k into stocks (50% of target)
-Week 5: Move $15k more (complete stock allocation)
-Week 6: Buy bonds ($10k)
-Week 8: Small crypto position ($2.5k)
-
-Keep $7.5k in high-yield savings (5% is good!)
-
-WHY NOW? Market fear is elevated, valuations reasonable, you have 30+ years to ride out volatility. This correction is a GIFT for long-term investors.
-
-RISK: If risk score jumps back above 70, pause and reassess. Set a calendar reminder to check back in 1 month.`,
+        content: 'Sorry, I encountered an error. Please try again later.',
       };
-      setMessages(prev => [...prev, aiResponse]);
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (

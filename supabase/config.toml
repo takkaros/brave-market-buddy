@@ -1,1 +1,16 @@
 project_id = "rzckgajxdksecstoeasl"
+
+[functions.fetch-stocks-data]
+verify_jwt = false
+
+[functions.fetch-crypto-data]
+verify_jwt = false
+
+[functions.fetch-economic-data]
+verify_jwt = false
+
+[functions.check-api-health]
+verify_jwt = false
+
+[functions.ai-chat]
+verify_jwt = false

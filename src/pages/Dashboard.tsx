@@ -9,6 +9,7 @@ import RiskTrendChart from '@/components/RiskTrendChart';
 import FearGreedGauge from '@/components/FearGreedGauge';
 import AssetAllocationChart from '@/components/AssetAllocationChart';
 import KeyIndicatorsChart from '@/components/KeyIndicatorsChart';
+import APIStatusMonitor from '@/components/APIStatusMonitor';
 import InfoTooltip from '@/components/InfoTooltip';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -98,12 +99,15 @@ const Dashboard = () => {
           <AssetAllocationChart riskScore={score} />
         </div>
 
-        {/* AI Analysis */}
-        <AIAnalysisPanel 
-          riskScore={score} 
-          fearGreedIndex={mockData.fearGreedIndex}
-          onOpenChat={() => navigate('/chat')}
-        />
+        {/* AI Analysis and API Status */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AIAnalysisPanel 
+            riskScore={score} 
+            fearGreedIndex={mockData.fearGreedIndex}
+            onOpenChat={() => navigate('/chat')}
+          />
+          <APIStatusMonitor />
+        </div>
 
         {/* Risk Trend Chart */}
         <RiskTrendChart data={historicalData} />
@@ -137,7 +141,7 @@ const Dashboard = () => {
 
         {/* Demo Mode Notice */}
         <div className="glass-card rounded-lg p-4 text-center text-sm text-muted-foreground">
-          <p>Using demo data. Add OpenAI API key in Settings for live AI analysis.</p>
+          <p>Your API connections are now active! Real-time data from FRED, Alpha Vantage, CryptoCompare, and more.</p>
         </div>
       </div>
     </div>
