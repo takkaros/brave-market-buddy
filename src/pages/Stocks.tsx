@@ -1,24 +1,52 @@
+import { useState } from 'react';
 import { generateMockData } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Navigation from '@/components/Navigation';
 import InfoTooltip from '@/components/InfoTooltip';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, TrendingUp, Activity } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RefreshCw, TrendingUp, Activity, Globe2 } from 'lucide-react';
 
 const Stocks = () => {
+  const [timeframe, setTimeframe] = useState('1M');
   const mockData = generateMockData('bottom');
   
-  // Stock market metrics
+  // Stock market metrics - US
   const sp500 = 4200;
+  const nasdaq = 13000;
+  const dowJones = 33500;
+  
+  // European markets
+  const dax = 15800; // Germany
+  const cac40 = 7200; // France
+  const ftse100 = 7450; // UK
+  const stoxx600 = 460; // Europe-wide
+  
   const sp500PE = mockData.sp500PE;
   const vix = mockData.vix;
   const earnings = 225; // S&P 500 trailing earnings
   
-  const historicalReturns = Array.from({ length: 12 }, (_, i) => ({
-    month: `M${i + 1}`,
-    sp500: sp500 + (Math.random() - 0.5) * 400,
-    nasdaq: 13000 + (Math.random() - 0.5) * 1000,
+  // Generate price action data based on timeframe
+  const getDataPoints = () => {
+    switch(timeframe) {
+      case '1D': return 24;
+      case '1W': return 7;
+      case '1M': return 30;
+      case '3M': return 90;
+      case '6M': return 180;
+      case '1Y': return 365;
+      default: return 30;
+    }
+  };
+  
+  const dataPoints = getDataPoints();
+  
+  const priceHistory = Array.from({ length: dataPoints }, (_, i) => ({
+    day: i + 1,
+    sp500: sp500 + (Math.random() - 0.5) * 300 - i * 0.5,
+    nasdaq: nasdaq + (Math.random() - 0.5) * 800 - i * 1.2,
+    dax: dax + (Math.random() - 0.5) * 400 - i * 0.8,
   }));
 
   const sectorData = [
@@ -75,44 +103,153 @@ const Stocks = () => {
           </CardContent>
         </Card>
 
-        {/* Key Metrics */}
+        {/* Timeframe Selector */}
+        <div className="flex justify-end">
+          <Tabs value={timeframe} onValueChange={setTimeframe}>
+            <TabsList className="glass-card">
+              <TabsTrigger value="1D">1D</TabsTrigger>
+              <TabsTrigger value="1W">1W</TabsTrigger>
+              <TabsTrigger value="1M">1M</TabsTrigger>
+              <TabsTrigger value="3M">3M</TabsTrigger>
+              <TabsTrigger value="6M">6M</TabsTrigger>
+              <TabsTrigger value="1Y">1Y</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Key Metrics - US Markets */}
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            🇺🇸 US Markets
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="glass-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center">
+                  S&P 500 Index
+                  <InfoTooltip content="Represents 500 largest U.S. companies. Historical average: 10% annual return. Down 18% from peak = correction territory." />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{sp500.toLocaleString()}</p>
+                <p className="text-sm text-risk-elevated mt-1">-18% from ATH</p>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center">
+                  NASDAQ
+                  <InfoTooltip content="Tech-heavy index. Typically 2x more volatile than S&P 500 with higher upside in bull markets." />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{nasdaq.toLocaleString()}</p>
+                <p className="text-sm text-risk-elevated mt-1">-28% from ATH</p>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center">
+                  Dow Jones
+                  <InfoTooltip content="30 largest blue-chip U.S. companies. More stable, less volatile than NASDAQ." />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{dowJones.toLocaleString()}</p>
+                <p className="text-sm text-risk-elevated mt-1">-15% from ATH</p>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center">
+                  VIX (Fear Index)
+                  <InfoTooltip content="Market volatility index. Below 15 = complacent. 15-25 = normal. Above 30 = fear. Spikes above 40 = panic (best buying opportunities)." />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{vix}</p>
+                <p className="text-sm text-risk-moderate mt-1">Elevated fear</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* European Markets */}
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Globe2 className="w-5 h-5" />
+            🇪🇺 European Markets
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="glass-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center">
+                  DAX (Germany)
+                  <InfoTooltip content="Germany's blue-chip index. Europe's strongest economy. Industrial-heavy, sensitive to global trade." />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{dax.toLocaleString()}</p>
+                <p className="text-sm text-risk-elevated mt-1">-22% from peak</p>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center">
+                  CAC 40 (France)
+                  <InfoTooltip content="France's top 40 companies. Luxury goods, energy, and financials dominant. LVMH, TotalEnergies." />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{cac40.toLocaleString()}</p>
+                <p className="text-sm text-risk-elevated mt-1">-19% from peak</p>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center">
+                  FTSE 100 (UK)
+                  <InfoTooltip content="UK's top 100 companies. Heavy in financials, energy, and consumer goods. Brexit-affected but stable." />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{ftse100.toLocaleString()}</p>
+                <p className="text-sm text-risk-moderate mt-1">-12% from peak</p>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center">
+                  STOXX 600 (Europe)
+                  <InfoTooltip content="Pan-European index covering 600 companies across 17 countries. Best broad Europe exposure." />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{stoxx600.toLocaleString()}</p>
+                <p className="text-sm text-risk-elevated mt-1">-18% from peak</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Valuation Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="glass-card">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center">
-                S&P 500 Index
-                <InfoTooltip content="Represents 500 largest U.S. companies. Historical average: 10% annual return. Down 18% from peak = correction territory." />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{sp500.toLocaleString()}</p>
-              <p className="text-sm text-risk-elevated mt-1">-18% from ATH</p>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center">
-                P/E Ratio
+                P/E Ratio (S&P)
                 <InfoTooltip content="Price-to-Earnings ratio. Below 15 = cheap. 15-20 = fair value. Above 25 = expensive. Current level suggests reasonable valuations." />
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold">{sp500PE}x</p>
               <p className="text-sm text-risk-low mt-1">Below 20x = attractive</p>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center">
-                VIX (Fear Index)
-                <InfoTooltip content="Market volatility index. Below 15 = complacent. 15-25 = normal. Above 30 = fear. Spikes above 40 = panic (best buying opportunities)." />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{vix}</p>
-              <p className="text-sm text-risk-moderate mt-1">Elevated fear</p>
             </CardContent>
           </Card>
 
@@ -128,23 +265,61 @@ const Stocks = () => {
               <p className="text-sm text-risk-low mt-1">vs 4.5% bonds</p>
             </CardContent>
           </Card>
+
+          <Card className="glass-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center">
+                Forward P/E
+                <InfoTooltip content="Price relative to next 12 months earnings estimates. Typically 1-2 points lower than trailing P/E." />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">16.5x</p>
+              <p className="text-sm text-risk-low mt-1">Attractive vs historical</p>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center">
+                Dividend Yield
+                <InfoTooltip content="S&P 500 average dividend yield. Historical range: 1.5-2.5%. Higher yields often mark bottoms." />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">1.8%</p>
+              <p className="text-sm text-muted-foreground mt-1">Moderate</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="glass-card">
             <CardHeader>
-              <CardTitle className="flex items-center">
-                Market Performance (12 Months)
-                <InfoTooltip content="S&P 500 and NASDAQ trends. Tech-heavy NASDAQ typically more volatile with higher upside in bull markets." />
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center">
+                  Price Action ({timeframe})
+                  <InfoTooltip content="Actual index prices over selected timeframe. Look for higher lows (bullish) or lower highs (bearish)." />
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={historicalReturns}>
+                <AreaChart data={priceHistory}>
+                  <defs>
+                    <linearGradient id="sp500Gradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="nasdaqGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
-                    dataKey="month" 
+                    dataKey="day" 
                     stroke="hsl(var(--muted-foreground))"
                     tick={{ fill: 'hsl(var(--muted-foreground))' }}
                   />
@@ -159,9 +334,9 @@ const Stocks = () => {
                       borderRadius: '8px',
                     }}
                   />
-                  <Line type="monotone" dataKey="sp500" stroke="hsl(var(--chart-1))" strokeWidth={2} name="S&P 500" />
-                  <Line type="monotone" dataKey="nasdaq" stroke="hsl(var(--chart-2))" strokeWidth={2} name="NASDAQ" />
-                </LineChart>
+                  <Area type="monotone" dataKey="sp500" stroke="hsl(var(--chart-1))" fill="url(#sp500Gradient)" strokeWidth={2} name="S&P 500" />
+                  <Area type="monotone" dataKey="nasdaq" stroke="hsl(var(--chart-2))" fill="url(#nasdaqGradient)" strokeWidth={2} name="NASDAQ" />
+                </AreaChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
@@ -307,21 +482,8 @@ const Stocks = () => {
           </CardContent>
         </Card>
 
-        {/* Additional Metrics */}
+        {/* Additional Trading Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="glass-card">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center">
-                Dividend Yield
-                <InfoTooltip content="S&P 500 average dividend yield. Historical range: 1.5-2.5%. Higher yields often mark bottoms." />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">1.8%</p>
-              <p className="text-sm text-muted-foreground mt-1">Moderate</p>
-            </CardContent>
-          </Card>
-
           <Card className="glass-card">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center">
@@ -338,13 +500,26 @@ const Stocks = () => {
           <Card className="glass-card">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center">
-                Forward P/E
-                <InfoTooltip content="Price relative to next 12 months earnings estimates. Typically 1-2 points lower than trailing P/E." />
+                Market Breadth
+                <InfoTooltip content="Advance/Decline line. Positive = healthy broad rally. Negative = narrow leadership (warning sign)." />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">16.5x</p>
-              <p className="text-sm text-risk-low mt-1">Attractive vs historical</p>
+              <p className="text-2xl font-bold">{mockData.advanceDecline}</p>
+              <p className="text-sm text-risk-elevated mt-1">Weak breadth</p>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center">
+                Margin Debt
+                <InfoTooltip content="Investor borrowing to buy stocks. Rising = bullish sentiment. Falling = deleveraging. Peaks mark tops." />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">${mockData.marginDebt}B</p>
+              <p className="text-sm text-risk-low mt-1">Down from peak (healthy)</p>
             </CardContent>
           </Card>
         </div>

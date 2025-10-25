@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { generateMockData } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import Navigation from '@/components/Navigation';
 import InfoTooltip from '@/components/InfoTooltip';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RefreshCw, TrendingDown, TrendingUp, AlertTriangle } from 'lucide-react';
 
 const Crypto = () => {
+  const [timeframe, setTimeframe] = useState('1M');
   const mockData = generateMockData('bottom');
   
   // Crypto-specific metrics
@@ -16,14 +19,29 @@ const Crypto = () => {
   const fearGreed = mockData.fearGreedIndex;
   const cryptoMarketCap = 1.65; // Trillion
   
+  // Generate data based on timeframe
+  const getDataPoints = () => {
+    switch(timeframe) {
+      case '1D': return 24;
+      case '1W': return 7;
+      case '1M': return 30;
+      case '3M': return 90;
+      case '6M': return 180;
+      case '1Y': return 365;
+      default: return 30;
+    }
+  };
+  
+  const dataPoints = getDataPoints();
+  
   // Mock historical data
-  const priceHistory = Array.from({ length: 30 }, (_, i) => ({
+  const priceHistory = Array.from({ length: dataPoints }, (_, i) => ({
     day: i + 1,
-    btc: btcPrice + (Math.random() - 0.5) * 5000,
-    eth: ethPrice + (Math.random() - 0.5) * 300,
+    btc: btcPrice + (Math.random() - 0.5) * 5000 - i * 2,
+    eth: ethPrice + (Math.random() - 0.5) * 300 - i * 0.3,
   }));
 
-  const volumeData = Array.from({ length: 30 }, (_, i) => ({
+  const volumeData = Array.from({ length: dataPoints }, (_, i) => ({
     day: i + 1,
     volume: 45 + (Math.random() - 0.5) * 15,
   }));
@@ -52,6 +70,20 @@ const Crypto = () => {
         </div>
 
         <Navigation />
+
+        {/* Timeframe Selector */}
+        <div className="flex justify-end">
+          <Tabs value={timeframe} onValueChange={setTimeframe}>
+            <TabsList className="glass-card">
+              <TabsTrigger value="1D">1D</TabsTrigger>
+              <TabsTrigger value="1W">1W</TabsTrigger>
+              <TabsTrigger value="1M">1M</TabsTrigger>
+              <TabsTrigger value="3M">3M</TabsTrigger>
+              <TabsTrigger value="6M">6M</TabsTrigger>
+              <TabsTrigger value="1Y">1Y</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
         {/* Main Signal Card */}
         <Card className="glass-card border-l-4" style={{ borderLeftColor: signalColor }}>
@@ -135,7 +167,7 @@ const Crypto = () => {
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center">
-                Price History (30 Days)
+                Price History ({timeframe})
                 <InfoTooltip content="BTC and ETH price trends. Look for higher lows (bullish) or lower highs (bearish)." />
               </CardTitle>
             </CardHeader>
@@ -169,7 +201,7 @@ const Crypto = () => {
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center">
-                Trading Volume (30 Days)
+                Trading Volume ({timeframe})
                 <InfoTooltip content="Daily trading volume in billions. High volume + price increase = strong move. Low volume = weak trend." />
               </CardTitle>
             </CardHeader>

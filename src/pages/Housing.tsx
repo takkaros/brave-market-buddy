@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { generateMockData } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Navigation from '@/components/Navigation';
 import InfoTooltip from '@/components/InfoTooltip';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RefreshCw, Home, DollarSign, TrendingUp, AlertTriangle } from 'lucide-react';
 
 const Housing = () => {
+  const [timeframe, setTimeframe] = useState('1Y');
   const mockData = generateMockData('bottom');
   
   // Housing-specific metrics
@@ -16,10 +19,24 @@ const Housing = () => {
   const inventory = mockData.homeInventory;
   const priceYoY = -8.5; // Year over year change
   
+  // Generate data based on timeframe
+  const getDataPoints = () => {
+    switch(timeframe) {
+      case '3M': return 3;
+      case '6M': return 6;
+      case '1Y': return 12;
+      case '2Y': return 24;
+      case '5Y': return 60;
+      default: return 12;
+    }
+  };
+  
+  const dataPoints = getDataPoints();
+  
   // Historical data
-  const priceHistory = Array.from({ length: 24 }, (_, i) => ({
-    month: `M${i + 1}`,
-    price: medianPrice + (Math.random() - 0.7) * 40000,
+  const priceHistory = Array.from({ length: dataPoints }, (_, i) => ({
+    month: i + 1,
+    price: medianPrice + (Math.random() - 0.7) * 40000 - i * 500,
     sales: 550 + (Math.random() - 0.5) * 100,
   }));
 
@@ -52,6 +69,19 @@ const Housing = () => {
         </div>
 
         <Navigation />
+
+        {/* Timeframe Selector */}
+        <div className="flex justify-end">
+          <Tabs value={timeframe} onValueChange={setTimeframe}>
+            <TabsList className="glass-card">
+              <TabsTrigger value="3M">3M</TabsTrigger>
+              <TabsTrigger value="6M">6M</TabsTrigger>
+              <TabsTrigger value="1Y">1Y</TabsTrigger>
+              <TabsTrigger value="2Y">2Y</TabsTrigger>
+              <TabsTrigger value="5Y">5Y</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
         {/* Signal Card */}
         <Card className="glass-card border-l-4" style={{ borderLeftColor: signalColor }}>
@@ -135,7 +165,7 @@ const Housing = () => {
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center">
-                Price & Sales Trends (24 Months)
+                Price & Sales Trends ({timeframe})
                 <InfoTooltip content="Median prices and home sales volume. Look for price stabilization and increasing sales as buy signals." />
               </CardTitle>
             </CardHeader>

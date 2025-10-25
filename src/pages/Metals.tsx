@@ -1,17 +1,34 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Navigation from '@/components/Navigation';
 import InfoTooltip from '@/components/InfoTooltip';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Coins } from 'lucide-react';
 
 const Metals = () => {
+  const [timeframe, setTimeframe] = useState('1M');
   const goldPrice = 2050;
   const silverPrice = 24.5;
   
-  const history = Array.from({ length: 30 }, (_, i) => ({
+  const getDataPoints = () => {
+    switch(timeframe) {
+      case '1D': return 24;
+      case '1W': return 7;
+      case '1M': return 30;
+      case '3M': return 90;
+      case '6M': return 180;
+      case '1Y': return 365;
+      default: return 30;
+    }
+  };
+  
+  const dataPoints = getDataPoints();
+  
+  const history = Array.from({ length: dataPoints }, (_, i) => ({
     day: i + 1,
-    gold: goldPrice + (Math.random() - 0.5) * 100,
-    silver: silverPrice + (Math.random() - 0.5) * 2,
+    gold: goldPrice + (Math.random() - 0.5) * 100 - i * 0.2,
+    silver: silverPrice + (Math.random() - 0.5) * 2 - i * 0.005,
   }));
 
   return (
@@ -23,6 +40,20 @@ const Metals = () => {
         </div>
 
         <Navigation />
+
+        {/* Timeframe Selector */}
+        <div className="flex justify-end">
+          <Tabs value={timeframe} onValueChange={setTimeframe}>
+            <TabsList className="glass-card">
+              <TabsTrigger value="1D">1D</TabsTrigger>
+              <TabsTrigger value="1W">1W</TabsTrigger>
+              <TabsTrigger value="1M">1M</TabsTrigger>
+              <TabsTrigger value="3M">3M</TabsTrigger>
+              <TabsTrigger value="6M">6M</TabsTrigger>
+              <TabsTrigger value="1Y">1Y</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
         <Card className="glass-card border-l-4 border-risk-moderate">
           <CardContent className="pt-6">
@@ -83,7 +114,7 @@ const Metals = () => {
         <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center">
-              Price History (30 Days)
+              Price History ({timeframe})
               <InfoTooltip content="Gold and silver price trends. Precious metals shine during crises and inflation." />
             </CardTitle>
           </CardHeader>

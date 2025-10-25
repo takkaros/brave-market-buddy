@@ -90,23 +90,24 @@ const Indicators = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="market" className="space-y-6">
+        <Tabs defaultValue="marketrisk" className="space-y-6">
           <TabsList className="glass-card p-1">
-            <TabsTrigger value="market">Market Risk</TabsTrigger>
-            <TabsTrigger value="credit">Credit</TabsTrigger>
-            <TabsTrigger value="liquidity">Liquidity</TabsTrigger>
-            <TabsTrigger value="monetary">Monetary</TabsTrigger>
-            <TabsTrigger value="systemic">Systemic</TabsTrigger>
-            <TabsTrigger value="realestate">Real Estate</TabsTrigger>
+            <TabsTrigger value="marketrisk">Market Risk</TabsTrigger>
+            <TabsTrigger value="creditrisk">Credit</TabsTrigger>
+            <TabsTrigger value="liquidityrisk">Liquidity</TabsTrigger>
+            <TabsTrigger value="monetaryrisk">Monetary</TabsTrigger>
+            <TabsTrigger value="systemicrisk">Systemic</TabsTrigger>
+            <TabsTrigger value="realestate risk">Real Estate</TabsTrigger>
           </TabsList>
 
           {categories.map((category) => {
             const insight = proInsights[category.name];
+            const tabValue = category.name.toLowerCase().replace(/\s+/g, '');
             
             return (
             <TabsContent 
-              key={category.name.toLowerCase().replace(' ', '')} 
-              value={category.name.toLowerCase().replace(' ', '')}
+              key={tabValue} 
+              value={tabValue}
               className="space-y-6"
             >
               {/* Professional Insights Card */}
