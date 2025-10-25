@@ -16,6 +16,7 @@ import Indicators from "./pages/Indicators";
 import EnhancedSettings from "./pages/EnhancedSettings";
 import PortfolioBuilder from "./pages/PortfolioBuilder";
 import Portfolio from "./pages/Portfolio";
+import UnifiedDashboard from "./pages/UnifiedDashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/indicators" element={<Indicators />} />
             <Route path="/portfolio-builder" element={<ProtectedRoute><PortfolioBuilder /></ProtectedRoute>} />
             <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
+            <Route path="/unified" element={<ProtectedRoute><UnifiedDashboard /></ProtectedRoute>} />
             <Route path="/settings" element={<EnhancedSettings />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />

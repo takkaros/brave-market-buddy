@@ -26,14 +26,13 @@ const Navigation = () => {
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/unified', label: 'Portfolio Hub', icon: Target },
     { path: '/crypto', label: 'Crypto', icon: Bitcoin },
     { path: '/housing', label: 'Housing', icon: Home },
     { path: '/stocks', label: 'Stocks', icon: TrendingUp },
     { path: '/metals', label: 'Metals', icon: Coins },
     { path: '/bonds', label: 'Bonds', icon: CreditCard },
     { path: '/indicators', label: 'All Indicators', icon: BarChart3 },
-    { path: '/portfolio-builder', label: 'Portfolio Builder', icon: Target },
-    { path: '/portfolio', label: 'Portfolio', icon: Wallet },
     { path: '/chat', label: 'AI Chat', icon: MessageSquare },
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
