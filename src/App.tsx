@@ -15,6 +15,7 @@ import AIChat from "./pages/AIChat";
 import Indicators from "./pages/Indicators";
 import EnhancedSettings from "./pages/EnhancedSettings";
 import Portfolio from "./pages/Portfolio";
+import Economics from "./pages/Economics";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/bonds" element={<Bonds />} />
             <Route path="/chat" element={<AIChat />} />
             <Route path="/indicators" element={<Indicators />} />
+            <Route path="/economics" element={<Economics />} />
             <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
             <Route path="/settings" element={<EnhancedSettings />} />
             <Route path="/login" element={<Login />} />

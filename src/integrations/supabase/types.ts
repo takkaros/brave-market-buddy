@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      economic_indicators: {
+        Row: {
+          created_at: string
+          date: string | null
+          id: string
+          indicator_code: string
+          indicator_name: string
+          region: string
+          source: string | null
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          created_at?: string
+          date?: string | null
+          id?: string
+          indicator_code: string
+          indicator_name: string
+          region?: string
+          source?: string | null
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          created_at?: string
+          date?: string | null
+          id?: string
+          indicator_code?: string
+          indicator_name?: string
+          region?: string
+          source?: string | null
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: []
+      }
       portfolio_connections: {
         Row: {
           api_key: string | null
@@ -70,11 +106,14 @@ export type Database = {
           amount: number
           asset_name: string | null
           asset_symbol: string
+          asset_type: string
           connection_id: string | null
           created_at: string
           id: string
           last_updated_at: string
           price_usd: number | null
+          purchase_date: string | null
+          purchase_price_usd: number | null
           user_id: string
           value_usd: number | null
         }
@@ -82,11 +121,14 @@ export type Database = {
           amount?: number
           asset_name?: string | null
           asset_symbol: string
+          asset_type?: string
           connection_id?: string | null
           created_at?: string
           id?: string
           last_updated_at?: string
           price_usd?: number | null
+          purchase_date?: string | null
+          purchase_price_usd?: number | null
           user_id: string
           value_usd?: number | null
         }
@@ -94,11 +136,14 @@ export type Database = {
           amount?: number
           asset_name?: string | null
           asset_symbol?: string
+          asset_type?: string
           connection_id?: string | null
           created_at?: string
           id?: string
           last_updated_at?: string
           price_usd?: number | null
+          purchase_date?: string | null
+          purchase_price_usd?: number | null
           user_id?: string
           value_usd?: number | null
         }
@@ -111,6 +156,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tax_calculations: {
+        Row: {
+          asset_type: string
+          calculation_data: Json | null
+          created_at: string
+          id: string
+          jurisdiction: string
+          net_gains: number | null
+          tax_owed: number | null
+          tax_year: number
+          total_gains: number | null
+          total_losses: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_type: string
+          calculation_data?: Json | null
+          created_at?: string
+          id?: string
+          jurisdiction?: string
+          net_gains?: number | null
+          tax_owed?: number | null
+          tax_year: number
+          total_gains?: number | null
+          total_losses?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_type?: string
+          calculation_data?: Json | null
+          created_at?: string
+          id?: string
+          jurisdiction?: string
+          net_gains?: number | null
+          tax_owed?: number | null
+          tax_year?: number
+          total_gains?: number | null
+          total_losses?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

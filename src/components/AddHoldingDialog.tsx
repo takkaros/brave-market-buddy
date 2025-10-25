@@ -55,6 +55,7 @@ export default function AddHoldingDialog({ onAdded }: Props) {
     asset_symbol: '',
     asset_name: '',
     amount: '',
+    asset_type: 'crypto',
   });
   const [fetchingPrice, setFetchingPrice] = useState(false);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
@@ -160,6 +161,9 @@ export default function AddHoldingDialog({ onAdded }: Props) {
         price_usd: priceUsd,
         value_usd: valueUsd,
         connection_id: null,
+        asset_type: form.asset_type,
+        purchase_price_usd: priceUsd,
+        purchase_date: new Date().toISOString(),
       });
 
       if (error) throw error;
@@ -169,7 +173,7 @@ export default function AddHoldingDialog({ onAdded }: Props) {
         description: `${validated.asset_symbol} added to your portfolio`,
       });
 
-      setForm({ asset_symbol: '', asset_name: '', amount: '' });
+      setForm({ asset_symbol: '', asset_name: '', amount: '', asset_type: 'crypto' });
       setCurrentPrice(null);
       setOpen(false);
       onAdded();
@@ -405,6 +409,27 @@ export default function AddHoldingDialog({ onAdded }: Props) {
                   onChange={(e) => setForm({ ...form, amount: e.target.value })}
                   required
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="asset_type">Asset Type</Label>
+                <Select
+                  value={form.asset_type}
+                  onValueChange={(value) => setForm({ ...form, asset_type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select asset type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="crypto">Cryptocurrency</SelectItem>
+                    <SelectItem value="stock">Stock</SelectItem>
+                    <SelectItem value="bond">Bond</SelectItem>
+                    <SelectItem value="etf">ETF</SelectItem>
+                    <SelectItem value="real_estate">Real Estate</SelectItem>
+                    <SelectItem value="commodity">Commodity</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {fetchingPrice && (

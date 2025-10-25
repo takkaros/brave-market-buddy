@@ -12,12 +12,19 @@ import {
   Plus,
   RefreshCw,
   PieChart as PieChartIcon,
-  List
+  List,
+  Bitcoin,
+  LineChart as LineChartIcon,
+  Building,
+  Coins,
+  Home,
+  Calculator
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import AddHoldingDialog from '@/components/AddHoldingDialog';
+import TaxCalculator from '@/components/TaxCalculator';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', '#6366f1'];
@@ -30,6 +37,9 @@ interface Holding {
   price_usd: number;
   value_usd: number;
   last_updated_at: string;
+  asset_type: string;
+  purchase_price_usd?: number;
+  purchase_date?: string;
 }
 
 export default function Portfolio() {
@@ -227,8 +237,8 @@ export default function Portfolio() {
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Portfolio</h1>
-            <p className="text-muted-foreground">Track and manage your crypto holdings</p>
+            <h1 className="text-4xl font-bold mb-2">Portfolio Powerhouse</h1>
+            <p className="text-muted-foreground">Track all your assets: Crypto, Stocks, Bonds, ETFs, Real Estate & more</p>
           </div>
           <div className="flex gap-2">
             <Button onClick={exportToCSV} variant="outline" size="sm">
@@ -285,23 +295,43 @@ export default function Portfolio() {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="list" className="space-y-4">
+        <Tabs defaultValue="all" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="list" className="gap-2">
+            <TabsTrigger value="all" className="gap-2">
               <List className="w-4 h-4" />
-              List View
+              All Assets
+            </TabsTrigger>
+            <TabsTrigger value="crypto" className="gap-2">
+              <Bitcoin className="w-4 h-4" />
+              Crypto
+            </TabsTrigger>
+            <TabsTrigger value="stocks" className="gap-2">
+              <LineChartIcon className="w-4 h-4" />
+              Stocks
+            </TabsTrigger>
+            <TabsTrigger value="bonds" className="gap-2">
+              <Building className="w-4 h-4" />
+              Bonds
+            </TabsTrigger>
+            <TabsTrigger value="other" className="gap-2">
+              <Coins className="w-4 h-4" />
+              Other
             </TabsTrigger>
             <TabsTrigger value="chart" className="gap-2">
               <PieChartIcon className="w-4 h-4" />
-              Chart View
+              Chart
+            </TabsTrigger>
+            <TabsTrigger value="tax" className="gap-2">
+              <Calculator className="w-4 h-4" />
+              Tax Helper
             </TabsTrigger>
           </TabsList>
 
-          {/* List View */}
-          <TabsContent value="list">
+          {/* All Assets */}
+          <TabsContent value="all">
             <Card>
               <CardHeader>
-                <CardTitle>Your Holdings</CardTitle>
+                <CardTitle>All Holdings</CardTitle>
               </CardHeader>
               <CardContent>
                 {loading ? (
@@ -318,60 +348,61 @@ export default function Portfolio() {
                 ) : (
                   <div className="space-y-2">
                     {holdings.map((holding) => (
-                      <div
-                        key={holding.id}
-                        className="flex items-center justify-between p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3">
-                            <div>
-                              <p className="font-semibold text-lg">{holding.asset_symbol}</p>
-                              <p className="text-sm text-muted-foreground">{holding.asset_name || holding.asset_symbol}</p>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="text-right mr-4">
-                          <p className="text-sm text-muted-foreground">Amount</p>
-                          <p className="font-semibold">
-                            {Number(holding.amount).toFixed(8)} {holding.asset_symbol}
-                          </p>
-                        </div>
-
-                        <div className="text-right mr-4">
-                          <p className="text-sm text-muted-foreground">Price</p>
-                          <p className="font-semibold">
-                            ${(Number(holding.price_usd) || 0).toLocaleString(undefined, { 
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2 
-                            })}
-                          </p>
-                        </div>
-
-                        <div className="text-right mr-4">
-                          <p className="text-sm text-muted-foreground">Value</p>
-                          <p className="font-bold text-lg">
-                            ${(Number(holding.value_usd) || 0).toLocaleString(undefined, { 
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2 
-                            })}
-                          </p>
-                        </div>
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteHolding(holding.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <HoldingRow key={holding.id} holding={holding} onDelete={deleteHolding} />
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Crypto Tab */}
+          <TabsContent value="crypto">
+            <AssetTypeContent 
+              holdings={holdings.filter(h => h.asset_type === 'crypto')} 
+              type="Crypto"
+              loading={loading}
+              onDelete={deleteHolding}
+              onAdded={fetchHoldings}
+            />
+          </TabsContent>
+
+          {/* Stocks Tab */}
+          <TabsContent value="stocks">
+            <AssetTypeContent 
+              holdings={holdings.filter(h => h.asset_type === 'stock')} 
+              type="Stocks"
+              loading={loading}
+              onDelete={deleteHolding}
+              onAdded={fetchHoldings}
+            />
+          </TabsContent>
+
+          {/* Bonds Tab */}
+          <TabsContent value="bonds">
+            <AssetTypeContent 
+              holdings={holdings.filter(h => h.asset_type === 'bond')} 
+              type="Bonds"
+              loading={loading}
+              onDelete={deleteHolding}
+              onAdded={fetchHoldings}
+            />
+          </TabsContent>
+
+          {/* Other Tab */}
+          <TabsContent value="other">
+            <AssetTypeContent 
+              holdings={holdings.filter(h => !['crypto', 'stock', 'bond'].includes(h.asset_type))} 
+              type="Other Assets"
+              loading={loading}
+              onDelete={deleteHolding}
+              onAdded={fetchHoldings}
+            />
+          </TabsContent>
+
+          {/* Tax Helper */}
+          <TabsContent value="tax">
+            <TaxCalculator holdings={holdings} />
           </TabsContent>
 
           {/* Chart View */}
@@ -415,5 +446,103 @@ export default function Portfolio() {
         </Tabs>
       </div>
     </div>
+  );
+}
+
+// Helper component for holding rows
+function HoldingRow({ holding, onDelete }: { holding: Holding; onDelete: (id: string) => void }) {
+  return (
+    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
+      <div className="flex-1">
+        <div className="flex items-center gap-3">
+          <div>
+            <p className="font-semibold text-lg">{holding.asset_symbol}</p>
+            <p className="text-sm text-muted-foreground">
+              {holding.asset_name || holding.asset_symbol}
+              <Badge variant="outline" className="ml-2">{holding.asset_type}</Badge>
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="text-right mr-4">
+        <p className="text-sm text-muted-foreground">Amount</p>
+        <p className="font-semibold">
+          {Number(holding.amount).toFixed(8)} {holding.asset_symbol}
+        </p>
+      </div>
+
+      <div className="text-right mr-4">
+        <p className="text-sm text-muted-foreground">Price</p>
+        <p className="font-semibold">
+          ${(Number(holding.price_usd) || 0).toLocaleString(undefined, { 
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2 
+          })}
+        </p>
+      </div>
+
+      <div className="text-right mr-4">
+        <p className="text-sm text-muted-foreground">Value</p>
+        <p className="font-bold text-lg">
+          ${(Number(holding.value_usd) || 0).toLocaleString(undefined, { 
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2 
+          })}
+        </p>
+      </div>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => onDelete(holding.id)}
+        className="text-destructive hover:text-destructive"
+      >
+        <Trash2 className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+}
+
+// Helper component for asset type tabs
+function AssetTypeContent({ 
+  holdings, 
+  type, 
+  loading, 
+  onDelete, 
+  onAdded 
+}: { 
+  holdings: Holding[]; 
+  type: string; 
+  loading: boolean; 
+  onDelete: (id: string) => void;
+  onAdded: () => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{type} Holdings</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading...</div>
+        ) : holdings.length === 0 ? (
+          <div className="text-center py-12">
+            <Wallet className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            <p className="text-lg font-semibold mb-2">No {type} Holdings</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Add your first {type.toLowerCase()} holding to start tracking
+            </p>
+            <AddHoldingDialog onAdded={onAdded} />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {holdings.map((holding) => (
+              <HoldingRow key={holding.id} holding={holding} onDelete={onDelete} />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
