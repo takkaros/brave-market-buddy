@@ -14,7 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      portfolio_connections: {
+        Row: {
+          api_key: string | null
+          api_passphrase: string | null
+          api_secret: string | null
+          blockchain: string | null
+          connection_type: string
+          created_at: string
+          exchange_name: string | null
+          id: string
+          is_active: boolean | null
+          last_synced_at: string | null
+          name: string
+          updated_at: string
+          user_id: string
+          wallet_address: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          api_passphrase?: string | null
+          api_secret?: string | null
+          blockchain?: string | null
+          connection_type: string
+          created_at?: string
+          exchange_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          name: string
+          updated_at?: string
+          user_id: string
+          wallet_address?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          api_passphrase?: string | null
+          api_secret?: string | null
+          blockchain?: string | null
+          connection_type?: string
+          created_at?: string
+          exchange_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
+      portfolio_holdings: {
+        Row: {
+          amount: number
+          asset_name: string | null
+          asset_symbol: string
+          connection_id: string | null
+          created_at: string
+          id: string
+          last_updated_at: string
+          price_usd: number | null
+          user_id: string
+          value_usd: number | null
+        }
+        Insert: {
+          amount?: number
+          asset_name?: string | null
+          asset_symbol: string
+          connection_id?: string | null
+          created_at?: string
+          id?: string
+          last_updated_at?: string
+          price_usd?: number | null
+          user_id: string
+          value_usd?: number | null
+        }
+        Update: {
+          amount?: number
+          asset_name?: string | null
+          asset_symbol?: string
+          connection_id?: string | null
+          created_at?: string
+          id?: string
+          last_updated_at?: string
+          price_usd?: number | null
+          user_id?: string
+          value_usd?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_holdings_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "portfolio_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
