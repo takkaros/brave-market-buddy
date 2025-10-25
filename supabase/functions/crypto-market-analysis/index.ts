@@ -12,46 +12,64 @@ serve(async (req) => {
   }
 
   try {
-    const { btcPrice, ethPrice, fearGreed, btcDominance, marketCap } = await req.json();
+    const { btcPrice, ethPrice, fearGreed, btcDominance, marketCap, holdings = [] } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     if (!LOVABLE_API_KEY) {
       throw new Error('Lovable AI key not configured');
     }
 
-    const prompt = `You are a professional cryptocurrency market analyst. Based on current market data, provide a detailed technical analysis.
+    // Build holdings context
+    const holdingsContext = holdings.length > 0 
+      ? `\n\nUser's Current Crypto Holdings (Cyprus-based investor):\n${holdings.map((h: any) => 
+          `- ${h.name || h.symbol}: ${h.amount} ${h.symbol} = $${h.value_usd?.toFixed(2) || '0'} (@ $${h.price_usd?.toFixed(2) || '0'})`
+        ).join('\n')}\nTotal Portfolio Value: $${holdings.reduce((sum: number, h: any) => sum + (h.value_usd || 0), 0).toFixed(2)}`
+      : '\n\nUser has no current crypto holdings - provide advice for a new Cyprus-based investor.';
+
+    const prompt = `You are a professional cryptocurrency market analyst specializing in the European/Cyprus market. Based on current market data, provide a personalized technical analysis.
 
 Current Market Data:
-- Bitcoin (BTC): $${btcPrice.toLocaleString()}
-- Ethereum (ETH): $${ethPrice.toLocaleString()}
+- Bitcoin (BTC): $${btcPrice.toLocaleString()} (€${(btcPrice * 0.92).toFixed(0)})
+- Ethereum (ETH): $${ethPrice.toLocaleString()} (€${(ethPrice * 0.92).toFixed(0)})
 - Fear & Greed Index: ${fearGreed}
 - BTC Dominance: ${btcDominance}%
 - Total Market Cap: $${marketCap}T
+${holdingsContext}
 
-Provide a comprehensive analysis in the following JSON format (respond ONLY with valid JSON, no markdown):
+**Cyprus/Europe Market Context:**
+- Trading hours: Consider European timezone (GMT+2 Cyprus)
+- EUR/USD exchange rate: ~0.92
+- European crypto regulations (MiCA framework)
+- Cyprus tax implications: 0% capital gains on crypto
+- Recommended European exchanges: Kraken, Bitstamp, Coinbase
+- Local Cyprus considerations: Strong tech/crypto community, favorable regulatory environment
+
+Provide a comprehensive PERSONALIZED analysis in the following JSON format (respond ONLY with valid JSON, no markdown):
 {
   "signal": "STRONG BUY" | "BUY" | "HOLD" | "SELL",
   "signalScore": number (0-10),
-  "marketContext": "detailed paragraph about current market conditions",
-  "btcAllocation": "percentage recommendation",
-  "ethAllocation": "percentage recommendation", 
+  "marketContext": "detailed paragraph about current market conditions from a European investor perspective, considering the user's holdings",
+  "btcAllocation": "percentage recommendation (consider their current holdings)",
+  "ethAllocation": "percentage recommendation (consider their current holdings)", 
   "altAllocation": "percentage recommendation",
-  "btcSupport": ["level1", "level2", "level3"],
-  "btcResistance": ["level1", "level2", "level3"],
-  "ethSupport": ["level1", "level2", "level3"],
-  "ethResistance": ["level1", "level2", "level3"],
-  "riskFactors": ["factor1", "factor2", "factor3", "factor4"],
-  "bottomLine": "2-3 sentence summary with specific advice"
+  "btcSupport": ["€XX,XXX level1", "€XX,XXX level2", "€XX,XXX level3"] (in EUR),
+  "btcResistance": ["€XX,XXX level1", "€XX,XXX level2", "€XX,XXX level3"] (in EUR),
+  "ethSupport": ["€X,XXX level1", "€X,XXX level2", "€X,XXX level3"] (in EUR),
+  "ethResistance": ["€X,XXX level1", "€X,XXX level2", "€X,XXX level3"] (in EUR),
+  "riskFactors": ["factor1 relevant to EU/Cyprus", "factor2", "factor3", "factor4"],
+  "bottomLine": "2-3 sentence personalized summary based on their holdings with specific advice for Cyprus investors"
 }
 
 Base your analysis on:
-- Current price levels vs historical ranges
+- Current price levels vs historical ranges (in EUR terms)
 - Fear & Greed sentiment
-- Technical support/resistance levels based on recent price action
+- Technical support/resistance levels in EUR
 - Market structure and trends
-- Risk/reward at current levels
+- Risk/reward at current levels FOR THIS SPECIFIC INVESTOR based on their holdings
+- European trading session considerations
+- Cyprus-specific tax advantages (0% capital gains)
 
-Be accurate and realistic. Do not hallucinate data. Base support/resistance on actual technical analysis principles.`;
+Be accurate, realistic, and PERSONALIZED to their portfolio. If they have holdings, reference them specifically.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -64,7 +82,7 @@ Be accurate and realistic. Do not hallucinate data. Base support/resistance on a
         messages: [
           { 
             role: 'system', 
-            content: 'You are a professional cryptocurrency technical analyst. Provide accurate, data-driven analysis. Respond only with valid JSON.' 
+            content: 'You are a professional cryptocurrency technical analyst specializing in European markets and Cyprus investors. Provide accurate, data-driven, personalized analysis. Respond only with valid JSON.' 
           },
           { role: 'user', content: prompt }
         ],

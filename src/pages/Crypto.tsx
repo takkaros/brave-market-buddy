@@ -43,7 +43,7 @@ const Crypto = () => {
   const fearGreed = mockData.fearGreedIndex;
   const cryptoMarketCap = 1.65; // Trillion
 
-  const fetchAIAnalysis = async (currentBtcPrice: number, currentEthPrice: number) => {
+  const fetchAIAnalysis = async (currentBtcPrice: number, currentEthPrice: number, holdings: any[]) => {
     setAnalysisLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('crypto-market-analysis', {
@@ -52,7 +52,14 @@ const Crypto = () => {
           ethPrice: currentEthPrice,
           fearGreed,
           btcDominance,
-          marketCap: cryptoMarketCap
+          marketCap: cryptoMarketCap,
+          holdings: holdings.map(h => ({
+            symbol: h.asset_symbol,
+            name: h.asset_name,
+            amount: h.amount,
+            value_usd: h.value_usd,
+            price_usd: h.price_usd
+          }))
         }
       });
 
@@ -116,8 +123,8 @@ const Crypto = () => {
 
       setLastUpdated(new Date().toLocaleString());
       
-      // Fetch AI analysis with updated prices
-      await fetchAIAnalysis(newBtcPrice, newEthPrice);
+      // Fetch AI analysis with updated prices and holdings
+      await fetchAIAnalysis(newBtcPrice, newEthPrice, holdingsData || []);
     } catch (error) {
       console.error('Error fetching crypto data:', error);
       toast({
@@ -303,7 +310,9 @@ const Crypto = () => {
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold">${btcPrice.toLocaleString()}</p>
-              <p className="text-sm text-risk-elevated mt-1">-39% from ATH ($69k)</p>
+              <p className="text-sm text-risk-elevated mt-1">
+                {((btcPrice - 108135) / 108135 * 100).toFixed(0)}% from ATH (€108k)
+              </p>
             </CardContent>
           </Card>
 
@@ -316,7 +325,9 @@ const Crypto = () => {
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold">${ethPrice.toLocaleString()}</p>
-              <p className="text-sm text-risk-elevated mt-1">-54% from ATH ($4.8k)</p>
+              <p className="text-sm text-risk-elevated mt-1">
+                {((ethPrice - 4878) / 4878 * 100).toFixed(0)}% from ATH (€4.9k)
+              </p>
             </CardContent>
           </Card>
 
