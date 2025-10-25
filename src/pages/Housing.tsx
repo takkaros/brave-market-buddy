@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateMockData } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -7,38 +7,75 @@ import InfoTooltip from '@/components/InfoTooltip';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RefreshCw, Home, DollarSign, TrendingUp, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Housing = () => {
   const [timeframe, setTimeframe] = useState('1Y');
   const mockData = generateMockData('bottom');
   
-  // Housing-specific metrics
-  const medianPrice = 420000;
-  const mortgageRate = mockData.mortgageRate;
-  const affordability = mockData.housingAffordability;
-  const inventory = mockData.homeInventory;
-  const priceYoY = -8.5; // Year over year change
+  // Cyprus housing-specific metrics
+  const [houseIndex, setHouseIndex] = useState(185);
+  const [priceYoY, setPriceYoY] = useState(-2.3);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [priceHistory, setPriceHistory] = useState<Array<{ month: number; price: number }>>([]);
   
-  // Generate data based on timeframe
-  const getDataPoints = () => {
-    switch(timeframe) {
-      case '3M': return 3;
-      case '6M': return 6;
-      case '1Y': return 12;
-      case '2Y': return 24;
-      case '5Y': return 60;
-      default: return 12;
+  const mortgageRate = mockData.mortgageRate;
+  const affordability = 102; // Cyprus specific
+  const inventory = 5.2; // months
+  
+  const fetchCyprusHousingData = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-cyprus-housing');
+
+      if (error) throw error;
+
+      if (data?.success && data.housingData) {
+        const observations = data.housingData.observations || [];
+        
+        if (observations.length > 0) {
+          // Get latest value
+          const latest = observations[0];
+          const previousYear = observations.find((o: any, i: number) => i >= 4); // ~1 year ago (quarterly data)
+          
+          const currentIndex = parseFloat(latest.value);
+          setHouseIndex(currentIndex);
+          
+          if (previousYear) {
+            const yoyChange = ((currentIndex - parseFloat(previousYear.value)) / parseFloat(previousYear.value)) * 100;
+            setPriceYoY(yoyChange);
+          }
+          
+          // Build price history
+          const history = observations.reverse().map((obs: any, i: number) => ({
+            month: i + 1,
+            price: parseFloat(obs.value),
+          }));
+          
+          setPriceHistory(history);
+        }
+        
+        setLastUpdated(new Date().toLocaleString());
+        
+        if (data.fallback) {
+          toast.warning('Using fallback data - FRED API limit may have been reached');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching Cyprus housing data:', error);
+      toast.error('Failed to fetch Cyprus housing data');
+    } finally {
+      setLoading(false);
     }
   };
-  
-  const dataPoints = getDataPoints();
-  
-  // Historical data
-  const priceHistory = Array.from({ length: dataPoints }, (_, i) => ({
-    month: i + 1,
-    price: medianPrice + (Math.random() - 0.7) * 40000 - i * 500,
-    sales: 550 + (Math.random() - 0.5) * 100,
-  }));
+
+  useEffect(() => {
+    fetchCyprusHousingData();
+    const interval = setInterval(fetchCyprusHousingData, 30 * 60 * 1000); // Refresh every 30 minutes
+    return () => clearInterval(interval);
+  }, []);
 
   const regionalData = [
     { region: 'West', price: 650000, change: -12 },
@@ -61,11 +98,20 @@ const Housing = () => {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold text-gradient mb-2">US Housing Market Analysis</h1>
-          <p className="text-muted-foreground">
-            Real estate prices, mortgage rates, affordability, and market timing signals (US market data)
-          </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl font-bold text-gradient mb-2">Cyprus Housing Market Analysis</h1>
+            <p className="text-muted-foreground">
+              Cyprus real estate prices, market trends, and investment opportunities
+            </p>
+            {lastUpdated && (
+              <p className="text-xs text-muted-foreground mt-1">Last updated: {lastUpdated}</p>
+            )}
+          </div>
+          <Button onClick={fetchCyprusHousingData} disabled={loading} variant="outline" size="sm" className="gap-2">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
         <Navigation />
@@ -92,7 +138,7 @@ const Housing = () => {
                   {signal === 'BUY' ? '🏡 BUY SIGNAL' : signal === 'MONITOR' ? '⏸️ WAIT & WATCH' : '⛔ NOT YET'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Mortgage rates: {mortgageRate}% | Affordability: {affordability} | Median: ${medianPrice.toLocaleString()}
+                  Mortgage rates: {mortgageRate}% | Affordability: {affordability} | HPI: {houseIndex.toFixed(1)}
                 </p>
               </div>
               <div className="text-right">
@@ -110,13 +156,15 @@ const Housing = () => {
           <Card className="glass-card">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center">
-                Median Home Price
-                <InfoTooltip content="U.S. median existing home sale price. Peaked at $460k (June 2022). Historical bottom ~20-30% below peak in downturns." />
+                House Price Index
+                <InfoTooltip content="Cyprus House Price Index from Bank for International Settlements. Base 100 = reference period. Rising index = appreciating prices." />
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">${medianPrice.toLocaleString()}</p>
-              <p className="text-sm text-risk-elevated mt-1">{priceYoY}% YoY</p>
+              <p className="text-3xl font-bold">{houseIndex.toFixed(1)}</p>
+              <p className={`text-sm mt-1 ${priceYoY > 0 ? 'text-risk-low' : 'text-risk-elevated'}`}>
+                {priceYoY > 0 ? '+' : ''}{priceYoY.toFixed(1)}% YoY
+              </p>
             </CardContent>
           </Card>
 
@@ -165,29 +213,24 @@ const Housing = () => {
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center">
-                Price & Sales Trends ({timeframe})
-                <InfoTooltip content="Median prices and home sales volume. Look for price stabilization and increasing sales as buy signals." />
+                Cyprus House Price Trend (Quarterly)
+                <InfoTooltip content="Cyprus House Price Index over time. Quarterly data from BIS. Shows the long-term trend of property values." />
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={priceHistory}>
+                <LineChart data={priceHistory.length > 0 ? priceHistory : []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
                     dataKey="month" 
                     stroke="hsl(var(--muted-foreground))"
                     tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    label={{ value: 'Quarters', position: 'insideBottom', offset: -5 }}
                   />
                   <YAxis 
-                    yAxisId="left"
                     stroke="hsl(var(--muted-foreground))"
                     tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <YAxis 
-                    yAxisId="right"
-                    orientation="right"
-                    stroke="hsl(var(--muted-foreground))"
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    label={{ value: 'Index', angle: -90, position: 'insideLeft' }}
                   />
                   <Tooltip
                     contentStyle={{
@@ -196,8 +239,7 @@ const Housing = () => {
                       borderRadius: '8px',
                     }}
                   />
-                  <Line yAxisId="left" type="monotone" dataKey="price" stroke="hsl(var(--chart-1))" strokeWidth={2} name="Median Price" />
-                  <Line yAxisId="right" type="monotone" dataKey="sales" stroke="hsl(var(--chart-2))" strokeWidth={2} name="Sales (k)" />
+                  <Line type="monotone" dataKey="price" stroke="hsl(var(--chart-1))" strokeWidth={2} name="HPI" />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>

@@ -1,45 +1,91 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateMockData } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Navigation from '@/components/Navigation';
 import InfoTooltip from '@/components/InfoTooltip';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CreditCard } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CreditCard, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Bonds = () => {
   const [timeframe, setTimeframe] = useState('1M');
   const mockData = generateMockData('bottom');
-  const yield10Y = 4.5;
-  const yield2Y = 4.8;
-  const yieldCurve = mockData.yieldCurve10y2y;
+  const [yield10Y, setYield10Y] = useState(4.5);
+  const [yield2Y, setYield2Y] = useState(4.8);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [yieldHistory, setYieldHistory] = useState<Array<{ day: number; y10: number; y2: number }>>([]);
+  const yieldCurve = yield10Y - yield2Y;
   
-  const getDataPoints = () => {
-    switch(timeframe) {
-      case '1D': return 24;
-      case '1W': return 7;
-      case '1M': return 30;
-      case '3M': return 90;
-      case '6M': return 180;
-      case '1Y': return 365;
-      default: return 30;
+  const fetchBondData = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-bond-data', {
+        body: { timeframe }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data.yield10 && data.yield2) {
+        const yield10Obs = data.yield10.observations || [];
+        const yield2Obs = data.yield2.observations || [];
+        
+        if (yield10Obs.length > 0 && yield2Obs.length > 0) {
+          // Get latest yields
+          const latest10 = yield10Obs[yield10Obs.length - 1];
+          const latest2 = yield2Obs[yield2Obs.length - 1];
+          
+          setYield10Y(parseFloat(latest10.value));
+          setYield2Y(parseFloat(latest2.value));
+          
+          // Build history
+          const history = yield10Obs.map((obs: any, i: number) => ({
+            day: i + 1,
+            y10: parseFloat(obs.value) || 0,
+            y2: parseFloat(yield2Obs[i]?.value || '0') || 0,
+          })).filter((item: any) => item.y10 > 0 && item.y2 > 0);
+          
+          setYieldHistory(history);
+        }
+        
+        setLastUpdated(new Date().toLocaleString());
+        
+        if (data.fallback) {
+          toast.warning('Using fallback data - FRED API limit may have been reached');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching bond data:', error);
+      toast.error('Failed to fetch bond data');
+    } finally {
+      setLoading(false);
     }
   };
-  
-  const dataPoints = getDataPoints();
-  
-  const yieldHistory = Array.from({ length: dataPoints }, (_, i) => ({
-    day: i + 1,
-    y10: yield10Y + (Math.random() - 0.5) * 0.3 - i * 0.001,
-    y2: yield2Y + (Math.random() - 0.5) * 0.3 - i * 0.002,
-  }));
+
+  useEffect(() => {
+    fetchBondData();
+    const interval = setInterval(fetchBondData, 30 * 60 * 1000); // Refresh every 30 minutes
+    return () => clearInterval(interval);
+  }, [timeframe]);
 
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold text-gradient mb-2">Bond Market Analysis</h1>
-          <p className="text-muted-foreground">Treasury yields, yield curve, and fixed income opportunities</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl font-bold text-gradient mb-2">Bond Market Analysis</h1>
+            <p className="text-muted-foreground">Treasury yields, yield curve, and fixed income opportunities</p>
+            {lastUpdated && (
+              <p className="text-xs text-muted-foreground mt-1">Last updated: {lastUpdated}</p>
+            )}
+          </div>
+          <Button onClick={fetchBondData} disabled={loading} variant="outline" size="sm" className="gap-2">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
         <Navigation />
@@ -125,10 +171,10 @@ const Bonds = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={yieldHistory}>
+              <LineChart data={yieldHistory.length > 0 ? yieldHistory : []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" domain={['dataMin - 0.5', 'dataMax + 0.5']} />
                 <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))' }} />
                 <Line type="monotone" dataKey="y10" stroke="hsl(var(--chart-1))" strokeWidth={2} name="10Y" />
                 <Line type="monotone" dataKey="y2" stroke="hsl(var(--chart-2))" strokeWidth={2} name="2Y" />

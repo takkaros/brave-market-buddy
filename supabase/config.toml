@@ -9,6 +9,12 @@ verify_jwt = false
 [functions.fetch-metals-data]
 verify_jwt = false
 
+[functions.fetch-bond-data]
+verify_jwt = false
+
+[functions.fetch-cyprus-housing]
+verify_jwt = false
+
 [functions.fetch-economic-data]
 verify_jwt = false
 
@@ -19,4 +25,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.crypto-market-analysis]
+verify_jwt = false
+
+[functions.overall-market-analysis]
 verify_jwt = false
