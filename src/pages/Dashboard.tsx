@@ -11,6 +11,7 @@ import AssetAllocationChart from '@/components/AssetAllocationChart';
 import KeyIndicatorsChart from '@/components/KeyIndicatorsChart';
 import APIStatusMonitor from '@/components/APIStatusMonitor';
 import OverallMarketAnalysis from '@/components/OverallMarketAnalysis';
+import RiskForecast from '@/components/RiskForecast';
 import InfoTooltip from '@/components/InfoTooltip';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -27,6 +28,8 @@ const Dashboard = () => {
 
   const [overallAnalysis, setOverallAnalysis] = useState<any>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [riskForecast, setRiskForecast] = useState<any>(null);
+  const [forecastLoading, setForecastLoading] = useState(false);
   const [marketData, setMarketData] = useState({
     btcPrice: 0,
     ethPrice: 0,
@@ -59,6 +62,34 @@ const Dashboard = () => {
       toast.error('Failed to fetch overall market analysis');
     } finally {
       setAnalysisLoading(false);
+    }
+
+    // Generate risk forecast
+    setForecastLoading(true);
+    try {
+      const { data: forecastData, error: forecastError } = await supabase.functions.invoke('risk-forecast', {
+        body: {
+          currentScore: score,
+          historicalData: historicalData,
+          marketData: {
+            btcPrice: marketData.btcPrice,
+            goldPrice: marketData.goldPrice,
+            vix: mockData.vix,
+            yield10Y: marketData.yield10Y,
+            fearGreed: mockData.fearGreedIndex,
+          },
+        },
+      });
+
+      if (forecastError) throw forecastError;
+      if (!forecastData.success) throw new Error(forecastData.error);
+
+      setRiskForecast(forecastData.forecast);
+    } catch (error: any) {
+      console.error('Risk forecast error:', error);
+      toast.error('Failed to generate risk forecast');
+    } finally {
+      setForecastLoading(false);
     }
   };
 
@@ -190,6 +221,9 @@ const Dashboard = () => {
 
         {/* Overall Market Analysis - New Section */}
         <OverallMarketAnalysis analysis={overallAnalysis} loading={analysisLoading} />
+        
+        {/* Risk Forecast */}
+        <RiskForecast forecast={riskForecast} loading={forecastLoading} />
 
         {/* AI Analysis and API Status */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

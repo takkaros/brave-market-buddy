@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.overall-market-analysis]
 verify_jwt = false
+
+[functions.risk-forecast]
+verify_jwt = false
+
+[functions.portfolio-analysis]
+verify_jwt = false

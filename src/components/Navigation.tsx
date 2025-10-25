@@ -9,6 +9,8 @@ import {
   CreditCard,
   BarChart3,
   MessageSquare,
+  Target,
+  Wallet,
   Settings 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,6 +27,8 @@ const Navigation = () => {
     { path: '/metals', label: 'Metals', icon: Coins },
     { path: '/bonds', label: 'Bonds', icon: CreditCard },
     { path: '/indicators', label: 'All Indicators', icon: BarChart3 },
+    { path: '/portfolio-builder', label: 'Portfolio Builder', icon: Target },
+    { path: '/portfolio', label: 'Portfolio', icon: Wallet },
     { path: '/chat', label: 'AI Chat', icon: MessageSquare },
     { path: '/settings', label: 'Settings', icon: Settings },
   ];

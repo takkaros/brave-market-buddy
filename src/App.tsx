@@ -12,6 +12,8 @@ import Bonds from "./pages/Bonds";
 import AIChat from "./pages/AIChat";
 import Indicators from "./pages/Indicators";
 import EnhancedSettings from "./pages/EnhancedSettings";
+import PortfolioBuilder from "./pages/PortfolioBuilder";
+import Portfolio from "./pages/Portfolio";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +33,8 @@ const App = () => (
           <Route path="/bonds" element={<Bonds />} />
           <Route path="/chat" element={<AIChat />} />
           <Route path="/indicators" element={<Indicators />} />
+          <Route path="/portfolio-builder" element={<PortfolioBuilder />} />
+          <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/settings" element={<EnhancedSettings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
