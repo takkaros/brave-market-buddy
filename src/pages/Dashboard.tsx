@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { generateMockData, generateHistoricalData } from '@/utils/mockData';
 import { calculateRiskScore } from '@/utils/riskCalculator';
+import Navigation from '@/components/Navigation';
 import RiskGauge from '@/components/RiskGauge';
 import CategoryCard from '@/components/CategoryCard';
 import AIAnalysisPanel from '@/components/AIAnalysisPanel';
