@@ -263,20 +263,46 @@ export default function AddHoldingDialog({ onAdded }: Props) {
       const validated = walletSchema.parse(walletForm);
       setLoading(true);
 
-      const { error } = await supabase.from('portfolio_connections').insert({
-        user_id: user.id,
-        connection_type: 'wallet',
-        name: validated.name,
-        blockchain: validated.blockchain,
-        wallet_address: validated.wallet_address,
-      });
+      // Insert wallet connection
+      const { data: connectionData, error } = await supabase
+        .from('portfolio_connections')
+        .insert({
+          user_id: user.id,
+          connection_type: 'wallet',
+          name: validated.name,
+          blockchain: validated.blockchain,
+          wallet_address: validated.wallet_address,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast({
-        title: 'Wallet Added',
-        description: `${validated.blockchain} wallet connected successfully`,
-      });
+      // Sync wallet balance to fetch holdings
+      const { data: syncData, error: syncError } = await supabase.functions.invoke(
+        'sync-wallet-balance',
+        {
+          body: {
+            connectionId: connectionData.id,
+            blockchain: validated.blockchain,
+            walletAddress: validated.wallet_address,
+          },
+        }
+      );
+
+      if (syncError) {
+        console.error('Sync error:', syncError);
+        toast({
+          title: 'Wallet Added',
+          description: `${validated.blockchain} wallet connected, but balance sync failed. Try syncing manually.`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Wallet Added',
+          description: `${validated.blockchain} wallet connected successfully`,
+        });
+      }
 
       setWalletForm({ name: '', blockchain: '', wallet_address: '' });
       setOpen(false);
@@ -542,11 +568,11 @@ export default function AddHoldingDialog({ onAdded }: Props) {
                     <SelectValue placeholder="Select blockchain" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="bitcoin">Bitcoin (BTC)</SelectItem>
-                    <SelectItem value="ethereum">Ethereum (ETH)</SelectItem>
-                    <SelectItem value="solana">Solana (SOL)</SelectItem>
-                    <SelectItem value="polygon">Polygon (MATIC)</SelectItem>
-                    <SelectItem value="bsc">Binance Smart Chain</SelectItem>
+                    <SelectItem value="Bitcoin">Bitcoin (BTC)</SelectItem>
+                    <SelectItem value="Ethereum">Ethereum (ETH)</SelectItem>
+                    <SelectItem value="Solana">Solana (SOL)</SelectItem>
+                    <SelectItem value="Polygon">Polygon (MATIC)</SelectItem>
+                    <SelectItem value="BSC">Binance Smart Chain</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
