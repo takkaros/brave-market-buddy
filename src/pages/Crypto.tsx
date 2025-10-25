@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { generateMockData } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import Navigation from '@/components/Navigation';
 import InfoTooltip from '@/components/InfoTooltip';
@@ -33,6 +34,7 @@ const Crypto = () => {
   const [loading, setLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [cryptoHoldings, setCryptoHoldings] = useState<any[]>([]);
   const mockData = generateMockData('bottom');
   const { toast } = useToast();
   
@@ -74,6 +76,17 @@ const Crypto = () => {
   const fetchCryptoData = async () => {
     setLoading(true);
     try {
+      // Fetch holdings
+      const { data: holdingsData, error: holdingsError } = await supabase
+        .from('portfolio_holdings')
+        .select('*')
+        .in('asset_symbol', ['BTC', 'ETH', 'USDT', 'USDC', 'BNB', 'XRP', 'ADA', 'SOL', 'DOGE', 'DOT'])
+        .order('value_usd', { ascending: false });
+
+      if (!holdingsError && holdingsData) {
+        setCryptoHoldings(holdingsData);
+      }
+
       const { data: btcData, error: btcError } = await supabase.functions.invoke('fetch-crypto-data', {
         body: { symbol: 'BTC', timeframe }
       });
@@ -119,9 +132,28 @@ const Crypto = () => {
 
   useEffect(() => {
     fetchCryptoData();
-    // Refresh every 5 minutes
     const interval = setInterval(fetchCryptoData, 5 * 60 * 1000);
-    return () => clearInterval(interval);
+
+    // Setup realtime subscription for holdings
+    const channel = supabase
+      .channel('crypto-holdings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'portfolio_holdings'
+        },
+        () => {
+          fetchCryptoData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [timeframe]);
   
   // Generate data based on timeframe
@@ -212,6 +244,53 @@ const Crypto = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Your Crypto Holdings */}
+        {cryptoHoldings.length > 0 && (
+          <Card className="glass-card border-primary/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                💼 Your Crypto Holdings
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {cryptoHoldings.map((holding) => {
+                  const totalValue = cryptoHoldings.reduce((sum, h) => sum + (h.value_usd || 0), 0);
+                  const allocation = totalValue > 0 ? ((holding.value_usd / totalValue) * 100).toFixed(1) : '0';
+                  
+                  return (
+                    <div key={holding.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div>
+                        <p className="font-semibold">{holding.asset_name || holding.asset_symbol}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {holding.amount} {holding.asset_symbol}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          ${(holding.value_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          @ ${(holding.price_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+                        </p>
+                      </div>
+                      <Badge variant="outline">{allocation}%</Badge>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Total Crypto Value:</span>
+                  <span className="text-xl font-bold">
+                    ${cryptoHoldings.reduce((sum, h) => sum + (h.value_usd || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Price Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
