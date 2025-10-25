@@ -1,109 +1,14 @@
-import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, TrendingDown, Wallet, DollarSign, PieChart, Activity, RefreshCw } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { Wallet, DollarSign, PieChart, Activity, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { usePortfolio } from '@/hooks/usePortfolio';
 
 const Portfolio = () => {
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [holdings, setHoldings] = useState<any[]>([]);
-  const [connections, setConnections] = useState<any[]>([]);
-  const [totalValue, setTotalValue] = useState(0);
-
-  const fetchPortfolioData = async () => {
-    try {
-      setLoading(true);
-      
-      // Check authentication
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        console.log('No authenticated user found');
-        setLoading(false);
-        return;
-      }
-
-      console.log('Fetching portfolio data for user:', user.id);
-      
-      const { data: holdingsData, error: holdingsError } = await supabase
-        .from('portfolio_holdings')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('value_usd', { ascending: false });
-
-      if (holdingsError) throw holdingsError;
-
-      const { data: connectionsData, error: connectionsError } = await supabase
-        .from('portfolio_connections')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (connectionsError) throw connectionsError;
-
-      console.log('Portfolio data fetched:', {
-        holdings: holdingsData?.length || 0,
-        connections: connectionsData?.length || 0,
-        holdingsData: holdingsData,
-      });
-
-      setHoldings(holdingsData || []);
-      setConnections(connectionsData || []);
-      
-      const total = (holdingsData || []).reduce((sum, h) => sum + (Number(h.value_usd) || 0), 0);
-      setTotalValue(total);
-      
-      console.log('Total portfolio value:', total);
-    } catch (error: any) {
-      console.error('Error fetching portfolio:', error);
-      toast({
-        title: 'Failed to load portfolio',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPortfolioData();
-
-    // Setup realtime subscription
-    const channel = supabase
-      .channel('portfolio-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'portfolio_holdings'
-        },
-        () => {
-          fetchPortfolioData();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'portfolio_connections'
-        },
-        () => {
-          fetchPortfolioData();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  const { holdings, connections, loading, totalValue, fetchPortfolio } = usePortfolio();
 
   const transactions = [
     { date: 'N/A', type: 'N/A', asset: 'N/A', amount: 'N/A', price: 'N/A', total: 'N/A' },
@@ -123,13 +28,13 @@ const Portfolio = () => {
             <div>
               <h1 className="text-4xl font-bold mb-2 gradient-text">Portfolio Manager</h1>
               <p className="text-muted-foreground">
-                Track your holdings, transactions, and tax events (inspired by Rotki)
+                Track your holdings, transactions, and tax events
               </p>
               <Badge variant="outline" className="mt-2">
-                Privacy-First • Self-Hosted Ready • Open-Source Philosophy
+                Privacy-First • Secure • Real-time Updates
               </Badge>
             </div>
-            <Button onClick={fetchPortfolioData} disabled={loading} variant="outline" size="sm" className="gap-2">
+            <Button onClick={fetchPortfolio} disabled={loading} variant="outline" size="sm" className="gap-2">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
@@ -234,22 +139,22 @@ const Portfolio = () => {
                 ) : holdings.length > 0 ? (
                   <div className="space-y-3">
                     {holdings.map((holding) => {
-                      const allocation = totalValue > 0 ? ((holding.value_usd / totalValue) * 100).toFixed(1) : '0';
+                      const allocation = totalValue > 0 ? ((Number(holding.value_usd) / totalValue) * 100).toFixed(1) : '0';
                       
                       return (
                         <div key={holding.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                           <div>
                             <p className="font-semibold">{holding.asset_name || holding.asset_symbol}</p>
                             <p className="text-xs text-muted-foreground">
-                              Amount: {holding.amount} {holding.asset_symbol}
+                              {Number(holding.amount).toFixed(8)} {holding.asset_symbol}
                             </p>
                           </div>
                           <div className="text-right">
                             <p className="font-semibold">
-                              ${(holding.value_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              ${(Number(holding.value_usd) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              @ ${(holding.price_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              @ ${(Number(holding.price_usd) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                           </div>
                           <Badge variant="outline">{allocation}%</Badge>
@@ -260,7 +165,7 @@ const Portfolio = () => {
                 ) : (
                   <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
                     <p className="text-sm text-center text-muted-foreground">
-                      📊 No holdings found. Connect your wallets and exchanges in the Portfolio Builder
+                      📊 No holdings found. Go to Portfolio Builder to connect wallets and add holdings
                     </p>
                   </div>
                 )}
@@ -343,9 +248,7 @@ const Portfolio = () => {
               <div>
                 <p className="font-semibold mb-1">Privacy-First Design</p>
                 <p className="text-sm text-muted-foreground">
-                  Inspired by Rotki's open-source philosophy, this portfolio manager is designed to protect your privacy. 
-                  All data stays local, and you maintain full control over your financial information. 
-                  Connect only what you choose to share.
+                  Your financial data is encrypted and secure. All wallet connections are read-only and you maintain full control over your information.
                 </p>
               </div>
             </div>

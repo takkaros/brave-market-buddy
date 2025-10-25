@@ -13,7 +13,9 @@ serve(async (req) => {
   }
 
   try {
+    console.log('sync-wallet-balance: Starting sync');
     const { connectionId, blockchain, walletAddress } = await req.json();
+    console.log('sync-wallet-balance: Received', { connectionId, blockchain, walletAddress });
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -24,11 +26,14 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
+      console.error('sync-wallet-balance: Auth error', authError);
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    
+    console.log('sync-wallet-balance: Authenticated user', user.id);
 
     let balance = 0;
     let holdings: any[] = [];
@@ -135,12 +140,19 @@ serve(async (req) => {
     }
 
     // Update last synced time
-    await supabase
+    const { error: updateError } = await supabase
       .from('portfolio_connections')
       .update({ last_synced_at: new Date().toISOString() })
       .eq('id', connectionId);
 
-    console.log(`Synced wallet ${walletAddress} on ${blockchain}`);
+    if (updateError) {
+      console.error('sync-wallet-balance: Failed to update last_synced_at', updateError);
+    }
+
+    console.log(`sync-wallet-balance: Successfully synced ${walletAddress} on ${blockchain}`, {
+      balance,
+      holdings: holdings.length,
+    });
 
     return new Response(JSON.stringify({ 
       success: true,
