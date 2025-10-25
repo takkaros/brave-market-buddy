@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateMockData } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
@@ -7,17 +7,67 @@ import InfoTooltip from '@/components/InfoTooltip';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RefreshCw, TrendingDown, TrendingUp, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Crypto = () => {
   const [timeframe, setTimeframe] = useState('1M');
+  const [btcPrice, setBtcPrice] = useState(42000);
+  const [ethPrice, setEthPrice] = useState(2250);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [loading, setLoading] = useState(false);
   const mockData = generateMockData('bottom');
+  const { toast } = useToast();
   
   // Crypto-specific metrics
-  const btcPrice = 42000;
-  const ethPrice = 2250;
   const btcDominance = 52;
   const fearGreed = mockData.fearGreedIndex;
   const cryptoMarketCap = 1.65; // Trillion
+
+  const fetchCryptoData = async () => {
+    setLoading(true);
+    try {
+      const { data: btcData, error: btcError } = await supabase.functions.invoke('fetch-crypto-data', {
+        body: { symbol: 'BTC', timeframe }
+      });
+
+      if (btcError) throw btcError;
+
+      if (btcData?.success && btcData?.data?.Data?.Data) {
+        const latestBTC = btcData.data.Data.Data[btcData.data.Data.Data.length - 1];
+        setBtcPrice(latestBTC.close);
+      }
+
+      const { data: ethData, error: ethError } = await supabase.functions.invoke('fetch-crypto-data', {
+        body: { symbol: 'ETH', timeframe }
+      });
+
+      if (ethError) throw ethError;
+
+      if (ethData?.success && ethData?.data?.Data?.Data) {
+        const latestETH = ethData.data.Data.Data[ethData.data.Data.Data.length - 1];
+        setEthPrice(latestETH.close);
+      }
+
+      setLastUpdated(new Date().toLocaleString());
+    } catch (error) {
+      console.error('Error fetching crypto data:', error);
+      toast({
+        title: "Failed to fetch crypto data",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCryptoData();
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchCryptoData, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [timeframe]);
   
   // Generate data based on timeframe
   const getDataPoints = () => {
@@ -64,9 +114,16 @@ const Crypto = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="text-4xl font-bold text-gradient mb-2">Cryptocurrency Analysis</h1>
-          <p className="text-muted-foreground">
-            Bitcoin, Ethereum, and crypto market indicators with AI recommendations
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-muted-foreground">
+              Bitcoin, Ethereum, and crypto market indicators with AI recommendations
+            </p>
+            {lastUpdated && (
+              <p className="text-sm text-muted-foreground">
+                Last updated: {lastUpdated}
+              </p>
+            )}
+          </div>
         </div>
 
         <Navigation />
@@ -237,8 +294,8 @@ const Crypto = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>AI Crypto Market Analysis</CardTitle>
-              <Button size="sm" variant="outline" className="gap-2">
-                <RefreshCw className="w-4 h-4" />
+              <Button size="sm" variant="outline" className="gap-2" onClick={fetchCryptoData} disabled={loading}>
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             </div>
