@@ -38,8 +38,11 @@ serve(async (req) => {
     let balance = 0;
     let holdings: any[] = [];
 
+    // Normalize blockchain to lowercase for comparison
+    const blockchainLower = blockchain.toLowerCase();
+
     // Fetch balance based on blockchain
-    if (blockchain === 'Bitcoin') {
+    if (blockchainLower === 'bitcoin') {
       // Check if it's an xpub address
       if (walletAddress.startsWith('xpub') || walletAddress.startsWith('ypub') || walletAddress.startsWith('zpub')) {
         console.log('sync-wallet-balance: Fetching xpub balance from BlockCypher');
@@ -109,7 +112,7 @@ serve(async (req) => {
           console.log('sync-wallet-balance: Synced Bitcoin address:', balance, 'BTC =', balance * btcPrice, 'USD');
         }
       }
-    } else if (blockchain === 'Ethereum') {
+    } else if (blockchainLower === 'ethereum') {
       console.log('sync-wallet-balance: Fetching Ethereum balance from Etherscan');
       const etherscanKey = Deno.env.get('ETHERSCAN_API_KEY');
       
@@ -152,7 +155,7 @@ serve(async (req) => {
         const errorText = await ethResponse.text();
         console.error('sync-wallet-balance: Etherscan HTTP error:', errorText);
       }
-    } else if (blockchain === 'Polygon') {
+    } else if (blockchainLower === 'polygon') {
       console.log('sync-wallet-balance: Fetching Polygon balance from Polygonscan');
       const etherscanKey = Deno.env.get('ETHERSCAN_API_KEY'); // Polygonscan accepts Etherscan API key
       
@@ -187,7 +190,7 @@ serve(async (req) => {
           console.error('sync-wallet-balance: Polygonscan API error:', polyData.message || polyData.result);
         }
       }
-    } else if (blockchain === 'BSC') {
+    } else if (blockchainLower === 'bsc') {
       console.log('sync-wallet-balance: Fetching BSC balance from BscScan');
       const etherscanKey = Deno.env.get('ETHERSCAN_API_KEY'); // BscScan accepts Etherscan API key
       
@@ -222,7 +225,7 @@ serve(async (req) => {
           console.error('sync-wallet-balance: BscScan API error:', bscData.message || bscData.result);
         }
       }
-    } else if (blockchain === 'Solana') {
+    } else if (blockchainLower === 'solana') {
       console.log('sync-wallet-balance: Fetching Solana balance from public RPC');
       
       const solResponse = await fetch('https://api.mainnet-beta.solana.com', {
