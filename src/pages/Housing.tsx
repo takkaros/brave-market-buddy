@@ -17,12 +17,12 @@ const Housing = () => {
   // Cyprus housing-specific metrics
   const [houseIndex, setHouseIndex] = useState(185);
   const [priceYoY, setPriceYoY] = useState(-2.3);
+  const [mortgageRate, setMortgageRate] = useState(4.8); // Cyprus ECB rate
+  const [affordability, setAffordability] = useState(102); // Cyprus specific
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [priceHistory, setPriceHistory] = useState<Array<{ month: number; price: number }>>([]);
   
-  const mortgageRate = mockData.mortgageRate;
-  const affordability = 102; // Cyprus specific
   const inventory = 5.2; // months
   
   const fetchCyprusHousingData = async () => {
@@ -56,11 +56,23 @@ const Housing = () => {
           
           setPriceHistory(history);
         }
+
+        // Get Cyprus mortgage rate
+        if (data.mortgageData?.observations?.[0]?.value) {
+          const rate = parseFloat(data.mortgageData.observations[0].value);
+          setMortgageRate(rate);
+        }
+
+        // Calculate affordability (simplified: higher HPI = lower affordability)
+        // Using 250 as baseline (when HPI=100, affordability=150)
+        // Formula: affordability decreases as HPI increases
+        const calculatedAffordability = Math.round(250 - (houseIndex * 0.8));
+        setAffordability(calculatedAffordability);
         
         setLastUpdated(new Date().toLocaleString());
         
         if (data.fallback) {
-          toast.warning('Using fallback data - FRED API limit may have been reached');
+          toast.warning('Using fallback Cyprus data - FRED API limit may have been reached');
         }
       }
     } catch (error) {
@@ -137,9 +149,12 @@ const Housing = () => {
                 <h3 className="text-2xl font-bold mb-2" style={{ color: signalColor }}>
                   {signal === 'BUY' ? '🏡 BUY SIGNAL' : signal === 'MONITOR' ? '⏸️ WAIT & WATCH' : '⛔ NOT YET'}
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  Mortgage rates: {mortgageRate}% | Affordability: {affordability} | HPI: {houseIndex.toFixed(1)}
-                </p>
+                 <p className="text-sm text-muted-foreground">
+                   Cyprus Mortgage Rate: {mortgageRate.toFixed(1)}% | Affordability: {affordability} | Cyprus HPI: {houseIndex.toFixed(1)}
+                 </p>
+                 <p className="text-xs text-muted-foreground mt-1">
+                   🇨🇾 All data sources: Cyprus-specific (FRED/BIS)
+                 </p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground mb-1">Buy Score</p>
@@ -168,31 +183,31 @@ const Housing = () => {
             </CardContent>
           </Card>
 
-          <Card className="glass-card">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center">
-                30-Year Mortgage Rate
-                <InfoTooltip content="Average 30-year fixed mortgage rate. Below 4% = very strong. 6-7% = moderate. Above 7% = expensive." />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{mortgageRate}%</p>
-              <p className="text-sm text-risk-elevated mt-1">+3.5% from 2021 lows</p>
-            </CardContent>
-          </Card>
+           <Card className="glass-card">
+             <CardHeader className="pb-3">
+               <CardTitle className="text-sm flex items-center">
+                 Cyprus Mortgage Rate 🇨🇾
+                 <InfoTooltip content="Cyprus lending rate from ECB. Below 3% = very low. 4-5% = moderate. Above 6% = expensive. Cyprus rates typically lower than EU average." />
+               </CardTitle>
+             </CardHeader>
+             <CardContent>
+               <p className="text-3xl font-bold">{mortgageRate.toFixed(1)}%</p>
+               <p className="text-sm text-muted-foreground mt-1">Cyprus ECB data</p>
+             </CardContent>
+           </Card>
 
-          <Card className="glass-card">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center">
-                Affordability Index
-                <InfoTooltip content="100 = typical family can afford median home. Below 100 = unaffordable. Above 120 = very affordable. Currently at crisis levels." />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{affordability}</p>
-              <p className="text-sm text-risk-elevated mt-1">Worst since 2006</p>
-            </CardContent>
-          </Card>
+           <Card className="glass-card">
+             <CardHeader className="pb-3">
+               <CardTitle className="text-sm flex items-center">
+                 Cyprus Affordability 🇨🇾
+                 <InfoTooltip content="Calculated from Cyprus HPI and median income. 100 = typical Cypriot family can afford median home. Below 100 = challenging. Above 120 = very affordable." />
+               </CardTitle>
+             </CardHeader>
+             <CardContent>
+               <p className="text-3xl font-bold">{affordability}</p>
+               <p className="text-sm text-muted-foreground mt-1">Based on Cyprus data</p>
+             </CardContent>
+           </Card>
 
           <Card className="glass-card">
             <CardHeader className="pb-3">

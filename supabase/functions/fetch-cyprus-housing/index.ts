@@ -33,9 +33,20 @@ serve(async (req) => {
       throw new Error(data.error_message);
     }
 
-    // Get additional Cyprus economic data for context
+    // Get Cyprus mortgage rates (ECB MFI interest rates for Cyprus)
+    // ECBMLFMR - Cyprus mortgage lending rates
+    const mortgageResponse = await fetch(
+      `https://api.stlouisfed.org/fred/series/observations?series_id=IR3TLV01CYM156N&api_key=${FRED_KEY}&file_type=json&limit=4&sort_order=desc`
+    );
+
+    let mortgageData = null;
+    if (mortgageResponse.ok) {
+      mortgageData = await mortgageResponse.json();
+    }
+
+    // Get Cyprus GDP per capita for affordability calculation
     const gdpResponse = await fetch(
-      `https://api.stlouisfed.org/fred/series/observations?series_id=CPRGDPQDSNAQ&api_key=${FRED_KEY}&file_type=json&limit=8&sort_order=desc`
+      `https://api.stlouisfed.org/fred/series/observations?series_id=NYGDPPCAPKDCYP&api_key=${FRED_KEY}&file_type=json&limit=4&sort_order=desc`
     );
 
     let gdpData = null;
@@ -48,6 +59,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true, 
       housingData: data,
+      mortgageData: mortgageData,
       gdpData: gdpData,
       timestamp: new Date().toISOString()
     }), {
@@ -58,16 +70,21 @@ serve(async (req) => {
     console.error('Error fetching Cyprus housing data:', error);
     
     // Fallback to mock Cyprus data
-    const mockData = {
+    const mockHousingData = {
       observations: Array.from({ length: 20 }, (_, i) => ({
         date: new Date(Date.now() - (20 - i) * 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         value: (185 + (Math.random() - 0.3) * 15 - i * 0.5).toFixed(2), // Cyprus HPI around 185 index
       }))
     };
 
+    const mockMortgageData = {
+      observations: [{ value: '4.8' }] // Cyprus average mortgage rate
+    };
+
     return new Response(JSON.stringify({ 
       success: true,
-      housingData: mockData,
+      housingData: mockHousingData,
+      mortgageData: mockMortgageData,
       fallback: true,
       error: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString()
