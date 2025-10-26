@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import AddHoldingDialog from '@/components/AddHoldingDialog';
 import TaxCalculator from '@/components/TaxCalculator';
+import { SyncLogViewer } from '@/components/SyncLogViewer';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', '#6366f1'];
@@ -71,6 +72,7 @@ export default function Portfolio() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncingWallet, setSyncingWallet] = useState<string | null>(null);
+  const [syncLogs, setSyncLogs] = useState<Array<{ timestamp: string; message: string; type: 'success' | 'error' | 'info' }>>([]);
 
   const fetchHoldings = async () => {
     if (!user) return;
@@ -135,6 +137,14 @@ export default function Portfolio() {
 
   const syncWallet = async (connectionId: string, blockchain: string, walletAddress: string) => {
     setSyncingWallet(connectionId);
+    const timestamp = new Date().toISOString();
+    
+    setSyncLogs(prev => [...prev, { 
+      timestamp, 
+      message: `🔄 Syncing ${blockchain} wallet...`, 
+      type: 'info' 
+    }]);
+
     try {
       const { data, error } = await supabase.functions.invoke('sync-wallet-balance', {
         body: { connectionId, blockchain, walletAddress }
@@ -142,12 +152,26 @@ export default function Portfolio() {
 
       if (error) {
         console.error('Sync error:', error);
+        setSyncLogs(prev => [...prev, { 
+          timestamp: new Date().toISOString(), 
+          message: `❌ ${blockchain} sync failed: ${error.message}`, 
+          type: 'error' 
+        }]);
         toast({
           title: 'Sync Failed',
           description: error.message || 'Failed to sync wallet balance',
           variant: 'destructive',
         });
       } else {
+        // Add logs from the response
+        if (data?.logs) {
+          setSyncLogs(prev => [...prev, ...data.logs.map((msg: string) => ({
+            timestamp: new Date().toISOString(),
+            message: msg,
+            type: 'success' as const
+          }))]);
+        }
+        
         toast({
           title: 'Wallet Synced',
           description: `${blockchain} wallet synced successfully`,
@@ -157,6 +181,11 @@ export default function Portfolio() {
       }
     } catch (error: any) {
       console.error('Sync failed:', error);
+      setSyncLogs(prev => [...prev, { 
+        timestamp: new Date().toISOString(), 
+        message: `❌ Error: ${error.message}`, 
+        type: 'error' 
+      }]);
       toast({
         title: 'Sync Failed',
         description: error.message,
@@ -169,6 +198,14 @@ export default function Portfolio() {
 
   const syncExchange = async (connectionId: string, exchangeName: string, apiKey: string, apiSecret: string) => {
     setSyncingWallet(connectionId);
+    const timestamp = new Date().toISOString();
+    
+    setSyncLogs(prev => [...prev, { 
+      timestamp, 
+      message: `🔄 Syncing ${exchangeName} exchange...`, 
+      type: 'info' 
+    }]);
+
     try {
       const { data, error } = await supabase.functions.invoke('sync-exchange-balance', {
         body: { connectionId, exchangeName, apiKey, apiSecret }
@@ -176,12 +213,26 @@ export default function Portfolio() {
 
       if (error) {
         console.error('Sync error:', error);
+        setSyncLogs(prev => [...prev, { 
+          timestamp: new Date().toISOString(), 
+          message: `❌ ${exchangeName} sync failed: ${error.message}`, 
+          type: 'error' 
+        }]);
         toast({
           title: 'Sync Failed',
           description: error.message || 'Failed to sync exchange balance',
           variant: 'destructive',
         });
       } else {
+        // Add logs from the response
+        if (data?.logs) {
+          setSyncLogs(prev => [...prev, ...data.logs.map((msg: string) => ({
+            timestamp: new Date().toISOString(),
+            message: msg,
+            type: 'success' as const
+          }))]);
+        }
+        
         toast({
           title: 'Exchange Synced',
           description: `${exchangeName} synced successfully`,
@@ -191,6 +242,11 @@ export default function Portfolio() {
       }
     } catch (error: any) {
       console.error('Sync failed:', error);
+      setSyncLogs(prev => [...prev, { 
+        timestamp: new Date().toISOString(), 
+        message: `❌ Error: ${error.message}`, 
+        type: 'error' 
+      }]);
       toast({
         title: 'Sync Failed',
         description: error.message,
@@ -435,6 +491,13 @@ export default function Portfolio() {
             <AddHoldingDialog onAdded={() => { fetchHoldings(); fetchWalletConnections(); }} />
           </div>
         </div>
+
+        {/* Sync Log Viewer */}
+        {syncLogs.length > 0 && (
+          <div className="mb-6">
+            <SyncLogViewer logs={syncLogs} />
+          </div>
+        )}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

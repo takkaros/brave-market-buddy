@@ -47,20 +47,19 @@ serve(async (req) => {
       console.log('🟠 BITCOIN SYNC INITIATED');
       // Check if it's an xpub address
       if (walletAddress.startsWith('xpub') || walletAddress.startsWith('ypub') || walletAddress.startsWith('zpub')) {
-        console.log('📡 Fetching XPUB balance from BlockCypher API');
-        const apiUrl = `https://api.blockcypher.com/v1/btc/main/addrs/${walletAddress}/balance`;
+        console.log('📡 Fetching XPUB balance from blockchain.info multiaddr API');
+        const apiUrl = `https://blockchain.info/multiaddr?active=${walletAddress}`;
         console.log('🌐 API URL:', apiUrl);
         
         const btcResponse = await fetch(apiUrl);
         console.log('📊 Response status:', btcResponse.status);
-        console.log('📊 Response headers:', JSON.stringify(Object.fromEntries(btcResponse.headers.entries())));
         
         if (btcResponse.ok) {
           const btcData = await btcResponse.json();
           console.log('📦 Raw API response:', JSON.stringify(btcData, null, 2));
           
-          // BlockCypher returns balance in satoshis
-          const satoshis = btcData.balance || 0;
+          // blockchain.info multiaddr returns balance in satoshis
+          const satoshis = btcData.wallet?.final_balance || 0;
           balance = satoshis / 100000000;
           
           console.log('💰 Parsed balance:', balance, 'BTC (', satoshis, 'satoshis )');
@@ -78,7 +77,6 @@ serve(async (req) => {
           const btcPrice = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
           console.log('💵 BTC price:', btcPrice);
           
-          // Always create holding even if balance is 0 (so user can see the connection is working)
           holdings = [{
             asset_symbol: 'BTC',
             asset_name: 'Bitcoin',
@@ -89,19 +87,22 @@ serve(async (req) => {
           console.log('✅ Created BTC holding:', JSON.stringify(holdings[0], null, 2));
         } else {
           const errorText = await btcResponse.text();
-          console.error('❌ BlockCypher API ERROR:', errorText);
+          console.error('❌ blockchain.info API ERROR:', errorText);
           console.error('❌ Status:', btcResponse.status);
+          throw new Error(`Failed to fetch xpub balance: ${errorText}`);
         }
       } else {
         // Regular Bitcoin address
-        console.log('sync-wallet-balance: Fetching regular address balance from blockchain.info');
+        console.log('📡 Fetching regular address balance from blockchain.info');
         const btcResponse = await fetch(`https://blockchain.info/balance?active=${walletAddress}`);
         
         if (btcResponse.ok) {
           const btcData = await btcResponse.json();
-          console.log('sync-wallet-balance: blockchain.info balance response:', JSON.stringify(btcData));
+          console.log('📦 blockchain.info balance response:', JSON.stringify(btcData));
           const satoshis = btcData[walletAddress]?.final_balance || 0;
           balance = satoshis / 100000000;
+          
+          console.log('💰 Parsed balance:', balance, 'BTC');
           
           // Get BTC price
           const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
@@ -116,7 +117,11 @@ serve(async (req) => {
             price_usd: btcPrice,
             value_usd: balance * btcPrice,
           }];
-          console.log('sync-wallet-balance: Synced Bitcoin address:', balance, 'BTC =', balance * btcPrice, 'USD');
+          console.log('✅ Synced Bitcoin address:', balance, 'BTC =', balance * btcPrice, 'USD');
+        } else {
+          const errorText = await btcResponse.text();
+          console.error('❌ blockchain.info API ERROR:', errorText);
+          throw new Error(`Failed to fetch Bitcoin balance: ${errorText}`);
         }
       }
     } else if (blockchainLower === 'ethereum') {
@@ -169,8 +174,8 @@ serve(async (req) => {
         console.error('❌ Etherscan V2 HTTP ERROR (status', ethResponse.status, '):', errorText);
       }
     } else if (blockchainLower === 'polygon') {
-      console.log('sync-wallet-balance: Fetching Polygon balance from Polygonscan');
-      const etherscanKey = Deno.env.get('ETHERSCAN_API_KEY'); // Polygonscan accepts Etherscan API key
+      console.log('🔷 POLYGON SYNC INITIATED');
+      const etherscanKey = Deno.env.get('ETHERSCAN_API_KEY');
       
       const polyResponse = await fetch(
         `https://api.polygonscan.com/api?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${etherscanKey}`
@@ -178,11 +183,11 @@ serve(async (req) => {
       
       if (polyResponse.ok) {
         const polyData = await polyResponse.json();
-        console.log('sync-wallet-balance: Polygonscan response:', JSON.stringify(polyData));
+        console.log('📦 Polygonscan response:', JSON.stringify(polyData));
         
         if (polyData.status === '1') {
           balance = parseInt(polyData.result || '0') / 1e18;
-          console.log('sync-wallet-balance: Parsed MATIC balance:', balance);
+          console.log('💰 Parsed MATIC balance:', balance);
           
           // Get MATIC price
           const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
@@ -190,7 +195,7 @@ serve(async (req) => {
           });
           
           const maticPrice = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
-          console.log('sync-wallet-balance: MATIC price:', maticPrice);
+          console.log('💵 MATIC price:', maticPrice);
           
           holdings = [{
             asset_symbol: 'MATIC',
@@ -200,12 +205,12 @@ serve(async (req) => {
             value_usd: balance * maticPrice,
           }];
         } else {
-          console.error('sync-wallet-balance: Polygonscan API error:', polyData.message || polyData.result);
+          console.error('❌ Polygonscan API error:', polyData.message || polyData.result);
         }
       }
     } else if (blockchainLower === 'bsc') {
-      console.log('sync-wallet-balance: Fetching BSC balance from BscScan');
-      const etherscanKey = Deno.env.get('ETHERSCAN_API_KEY'); // BscScan accepts Etherscan API key
+      console.log('🟡 BSC SYNC INITIATED');
+      const etherscanKey = Deno.env.get('ETHERSCAN_API_KEY');
       
       const bscResponse = await fetch(
         `https://api.bscscan.com/api?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${etherscanKey}`
@@ -213,11 +218,11 @@ serve(async (req) => {
       
       if (bscResponse.ok) {
         const bscData = await bscResponse.json();
-        console.log('sync-wallet-balance: BscScan response:', JSON.stringify(bscData));
+        console.log('📦 BscScan response:', JSON.stringify(bscData));
         
         if (bscData.status === '1') {
           balance = parseInt(bscData.result || '0') / 1e18;
-          console.log('sync-wallet-balance: Parsed BNB balance:', balance);
+          console.log('💰 Parsed BNB balance:', balance);
           
           // Get BNB price
           const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
@@ -225,7 +230,7 @@ serve(async (req) => {
           });
           
           const bnbPrice = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
-          console.log('sync-wallet-balance: BNB price:', bnbPrice);
+          console.log('💵 BNB price:', bnbPrice);
           
           holdings = [{
             asset_symbol: 'BNB',
@@ -235,11 +240,11 @@ serve(async (req) => {
             value_usd: balance * bnbPrice,
           }];
         } else {
-          console.error('sync-wallet-balance: BscScan API error:', bscData.message || bscData.result);
+          console.error('❌ BscScan API error:', bscData.message || bscData.result);
         }
       }
     } else if (blockchainLower === 'solana') {
-      console.log('sync-wallet-balance: Fetching Solana balance from public RPC');
+      console.log('🟣 SOLANA SYNC INITIATED');
       
       const solResponse = await fetch('https://api.mainnet-beta.solana.com', {
         method: 'POST',
@@ -254,11 +259,11 @@ serve(async (req) => {
       
       if (solResponse.ok) {
         const solData = await solResponse.json();
-        console.log('sync-wallet-balance: Solana RPC response:', JSON.stringify(solData));
+        console.log('📦 Solana RPC response:', JSON.stringify(solData));
         
         if (solData.result) {
           balance = (solData.result.value || 0) / 1e9; // SOL has 9 decimals
-          console.log('sync-wallet-balance: Parsed SOL balance:', balance);
+          console.log('💰 Parsed SOL balance:', balance);
           
           // Get SOL price
           const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
@@ -266,7 +271,7 @@ serve(async (req) => {
           });
           
           const solPrice = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
-          console.log('sync-wallet-balance: SOL price:', solPrice);
+          console.log('💵 SOL price:', solPrice);
           
           holdings = [{
             asset_symbol: 'SOL',
@@ -276,7 +281,7 @@ serve(async (req) => {
             value_usd: balance * solPrice,
           }];
         } else {
-          console.error('sync-wallet-balance: Solana RPC error:', solData.error);
+          console.error('❌ Solana RPC error:', solData.error);
         }
       }
     }
@@ -288,10 +293,10 @@ serve(async (req) => {
       .eq('connection_id', connectionId);
     
     if (deleteError) {
-      console.error('sync-wallet-balance: Failed to delete old holdings:', deleteError);
+      console.error('❌ Failed to delete old holdings:', deleteError);
     }
 
-    // Insert new holdings (even if balance is 0, so user can see the connection is working)
+    // Insert new holdings
     if (holdings.length > 0) {
       console.log('💾 Inserting', holdings.length, 'holdings into database...');
       const { error: insertError } = await supabase
@@ -321,7 +326,7 @@ serve(async (req) => {
       .eq('id', connectionId);
 
     if (updateError) {
-      console.error('sync-wallet-balance: Failed to update last_synced_at', updateError);
+      console.error('❌ Failed to update last_synced_at', updateError);
     }
 
     console.log('==================== SYNC COMPLETE ====================');
@@ -337,6 +342,12 @@ serve(async (req) => {
       success: true,
       balance,
       holdings,
+      logs: [
+        `✅ Synced ${blockchain} wallet`,
+        `💰 Balance: ${balance}`,
+        `📊 Holdings: ${holdings.length}`,
+        `💵 Total Value: $${holdings.reduce((sum, h) => sum + (h.value_usd || 0), 0).toFixed(2)}`
+      ],
       timestamp: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -348,6 +359,10 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
+      logs: [
+        `❌ Sync failed`,
+        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      ]
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

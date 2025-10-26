@@ -102,7 +102,7 @@ serve(async (req) => {
         console.error('❌ Binance Spot API ERROR:', errorText);
       }
 
-      // 2. FETCH SAVINGS/EARN BALANCES (Flexible + Locked)
+      // 2. FETCH SAVINGS/EARN BALANCES
       console.log('💎 Fetching Binance Savings/Earn...');
       const savingsTimestamp = Date.now();
       const savingsQueryString = `timestamp=${savingsTimestamp}`;
@@ -111,6 +111,7 @@ serve(async (req) => {
         .digest('hex');
       
       const savingsUrl = `https://api.binance.com/sapi/v1/lending/union/account?${savingsQueryString}&signature=${savingsSignature}`;
+      console.log('🌐 Calling Binance Savings API...');
       
       const savingsResponse = await fetch(savingsUrl, {
         headers: {
@@ -122,41 +123,65 @@ serve(async (req) => {
 
       if (savingsResponse.ok) {
         const savingsData = await savingsResponse.json();
-        console.log('📦 Savings data:', JSON.stringify(savingsData, null, 2));
+        console.log('📦 Full Savings data:', JSON.stringify(savingsData, null, 2));
         
-        // Process flexible savings
-        if (savingsData.positionAmountVos && savingsData.positionAmountVos.length > 0) {
-          console.log('🔄 Processing', savingsData.positionAmountVos.length, 'savings positions');
+        // Try multiple possible response structures
+        let positions = [];
+        
+        // Check for positionAmountVos (unified account structure)
+        if (savingsData.positionAmountVos && Array.isArray(savingsData.positionAmountVos)) {
+          positions = savingsData.positionAmountVos;
+          console.log('✅ Found positionAmountVos with', positions.length, 'items');
+        }
+        // Check for totalAmountInBTC structure
+        else if (savingsData.totalAmountInBTC !== undefined) {
+          console.log('✅ Found totalAmountInBTC structure');
+          // Try to extract positions from nested structure
+          if (savingsData.positionAmountVos) {
+            positions = savingsData.positionAmountVos;
+          }
+        }
+        // Check for direct array response
+        else if (Array.isArray(savingsData)) {
+          positions = savingsData;
+          console.log('✅ Found array response with', positions.length, 'items');
+        }
+        
+        console.log('🔍 Processing', positions.length, 'savings positions');
+        
+        for (const position of positions) {
+          const amount = parseFloat(position.amount || position.totalAmount || 0);
+          const symbol = position.asset;
           
-          for (const position of savingsData.positionAmountVos) {
-            const amount = parseFloat(position.amount || 0);
-            const symbol = position.asset;
+          console.log(`📊 Position data:`, JSON.stringify(position, null, 2));
+          
+          if (amount > 0 && symbol) {
+            console.log(`📈 Processing savings ${symbol}: ${amount}`);
             
-            if (amount > 0) {
-              console.log(`📈 Processing savings ${symbol}: ${amount}`);
-              
-              // Get price from CryptoCompare
-              const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
-                body: { symbol }
-              });
-              
-              const price = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
-              
-              holdings.push({
-                asset_symbol: symbol,
-                asset_name: `${position.asset} (Savings)`,
-                amount,
-                price_usd: price,
-                value_usd: amount * price,
-              });
-            }
+            // Get price from CryptoCompare
+            const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
+              body: { symbol }
+            });
+            
+            const price = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
+            console.log(`💵 ${symbol} price: ${price}`);
+            
+            holdings.push({
+              asset_symbol: symbol,
+              asset_name: `${symbol} (Savings)`,
+              amount,
+              price_usd: price,
+              value_usd: amount * price,
+            });
+          } else {
+            console.log(`⚠️ Skipping position - amount: ${amount}, symbol: ${symbol}`);
           }
         }
         
         console.log('✅ Total holdings after savings:', holdings.length);
       } else {
         const savingsError = await savingsResponse.text();
-        console.error('⚠️ Binance Savings API ERROR (non-critical):', savingsError);
+        console.error('⚠️ Binance Savings API ERROR:', savingsError);
         console.log('💡 Continuing with spot balances only...');
       }
     } else if (exchangeLower === 'coinbase') {
@@ -218,6 +243,13 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true,
       holdings,
+      logs: [
+        `✅ Synced ${exchangeName} exchange`,
+        `💰 Spot Holdings: ${holdings.filter(h => !h.asset_name.includes('Savings')).length}`,
+        `💎 Savings Holdings: ${holdings.filter(h => h.asset_name.includes('Savings')).length}`,
+        `📊 Total Holdings: ${holdings.length}`,
+        `💵 Total Value: $${holdings.reduce((sum, h) => sum + (h.value_usd || 0), 0).toFixed(2)}`
+      ],
       timestamp: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -229,6 +261,10 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
+      logs: [
+        `❌ Sync failed`,
+        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      ]
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
