@@ -67,7 +67,7 @@ serve(async (req) => {
                 source: 'FRED',
                 updated_at: new Date().toISOString(),
               }, {
-                onConflict: 'indicator_code,date,region'
+                onConflict: 'indicator_code'
               });
 
             if (upsertError) {

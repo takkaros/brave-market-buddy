@@ -8,7 +8,8 @@ import {
   TrendingDown,
   RefreshCw,
   Globe,
-  MapPin
+  MapPin,
+  Info
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -101,7 +102,17 @@ export default function Economics() {
   };
 
   useEffect(() => {
-    fetchIndicators();
+    const loadData = async () => {
+      await fetchIndicators();
+      
+      // If no data found, automatically sync for the first time
+      if (globalIndicators.length === 0 && cyprusIndicators.length === 0 && euIndicators.length === 0) {
+        console.log('No economic data found, syncing for the first time...');
+        syncData();
+      }
+    };
+    
+    loadData();
   }, []);
 
   const IndicatorCard = ({ indicator }: { indicator: Indicator }) => (
@@ -174,8 +185,16 @@ export default function Economics() {
                   {loading ? (
                     <div className="text-center py-8 text-muted-foreground">Loading...</div>
                   ) : globalIndicators.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No data available. Click "Sync Data" to fetch latest indicators.
+                    <div className="text-center py-8">
+                      <Info className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-lg font-medium mb-2">Loading Economic Data</p>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        First-time setup in progress. Economic indicators are being fetched from Federal Reserve...
+                      </p>
+                      <Button onClick={syncData} disabled={syncing}>
+                        <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                        {syncing ? 'Loading...' : 'Retry'}
+                      </Button>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -199,8 +218,16 @@ export default function Economics() {
                   {loading ? (
                     <div className="text-center py-8 text-muted-foreground">Loading...</div>
                   ) : cyprusIndicators.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No data available. Click "Sync Data" to fetch latest indicators.
+                    <div className="text-center py-8">
+                      <Info className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-lg font-medium mb-2">Loading Cyprus Data</p>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Economic indicators are being fetched...
+                      </p>
+                      <Button onClick={syncData} disabled={syncing}>
+                        <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                        {syncing ? 'Loading...' : 'Retry'}
+                      </Button>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -224,8 +251,16 @@ export default function Economics() {
                   {loading ? (
                     <div className="text-center py-8 text-muted-foreground">Loading...</div>
                   ) : euIndicators.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No data available. Click "Sync Data" to fetch latest indicators.
+                    <div className="text-center py-8">
+                      <Info className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-lg font-medium mb-2">Loading EU Data</p>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Economic indicators are being fetched...
+                      </p>
+                      <Button onClick={syncData} disabled={syncing}>
+                        <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                        {syncing ? 'Loading...' : 'Retry'}
+                      </Button>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

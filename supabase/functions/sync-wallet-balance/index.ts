@@ -48,7 +48,7 @@ serve(async (req) => {
       // Check if it's an xpub address
       if (walletAddress.startsWith('xpub') || walletAddress.startsWith('ypub') || walletAddress.startsWith('zpub')) {
         console.log('📡 Fetching XPUB balance from blockchain.info multiaddr API');
-        const apiUrl = `https://blockchain.info/multiaddr?active=${walletAddress}`;
+        const apiUrl = `https://blockchain.info/multiaddr?active=${walletAddress}&n=0`;
         console.log('🌐 API URL:', apiUrl);
         
         const btcResponse = await fetch(apiUrl);
@@ -56,9 +56,9 @@ serve(async (req) => {
         
         if (btcResponse.ok) {
           const btcData = await btcResponse.json();
-          console.log('📦 Raw API response:', JSON.stringify(btcData, null, 2));
+          console.log('📦 Raw API response (wallet):', JSON.stringify(btcData.wallet, null, 2));
           
-          // blockchain.info multiaddr returns balance in satoshis
+          // blockchain.info multiaddr returns wallet object with final_balance in satoshis
           const satoshis = btcData.wallet?.final_balance || 0;
           balance = satoshis / 100000000;
           

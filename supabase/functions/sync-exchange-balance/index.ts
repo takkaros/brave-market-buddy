@@ -102,87 +102,122 @@ serve(async (req) => {
         console.error('❌ Binance Spot API ERROR:', errorText);
       }
 
-      // 2. FETCH SAVINGS/EARN BALANCES
-      console.log('💎 Fetching Binance Savings/Earn...');
-      const savingsTimestamp = Date.now();
-      const savingsQueryString = `timestamp=${savingsTimestamp}`;
-      const savingsSignature = createHmac('sha256', apiSecret)
-        .update(savingsQueryString)
+      // 2. FETCH SIMPLE EARN FLEXIBLE POSITIONS
+      console.log('💎 Fetching Binance Simple Earn Flexible...');
+      const flexTimestamp = Date.now();
+      const flexQueryString = `timestamp=${flexTimestamp}`;
+      const flexSignature = createHmac('sha256', apiSecret)
+        .update(flexQueryString)
         .digest('hex');
       
-      const savingsUrl = `https://api.binance.com/sapi/v1/lending/union/account?${savingsQueryString}&signature=${savingsSignature}`;
-      console.log('🌐 Calling Binance Savings API...');
+      const flexUrl = `https://api.binance.com/sapi/v1/simple-earn/flexible/position?${flexQueryString}&signature=${flexSignature}`;
+      console.log('🌐 Calling Simple Earn Flexible API...');
       
-      const savingsResponse = await fetch(savingsUrl, {
+      const flexResponse = await fetch(flexUrl, {
         headers: {
           'X-MBX-APIKEY': apiKey
         }
       });
 
-      console.log('📊 Savings Response status:', savingsResponse.status);
+      console.log('📊 Flexible Response status:', flexResponse.status);
 
-      if (savingsResponse.ok) {
-        const savingsData = await savingsResponse.json();
-        console.log('📦 Full Savings data:', JSON.stringify(savingsData, null, 2));
+      if (flexResponse.ok) {
+        const flexData = await flexResponse.json();
+        console.log('📦 Full Flexible data:', JSON.stringify(flexData, null, 2));
         
-        // Try multiple possible response structures
-        let positions = [];
-        
-        // Check for positionAmountVos (unified account structure)
-        if (savingsData.positionAmountVos && Array.isArray(savingsData.positionAmountVos)) {
-          positions = savingsData.positionAmountVos;
-          console.log('✅ Found positionAmountVos with', positions.length, 'items');
-        }
-        // Check for totalAmountInBTC structure
-        else if (savingsData.totalAmountInBTC !== undefined) {
-          console.log('✅ Found totalAmountInBTC structure');
-          // Try to extract positions from nested structure
-          if (savingsData.positionAmountVos) {
-            positions = savingsData.positionAmountVos;
-          }
-        }
-        // Check for direct array response
-        else if (Array.isArray(savingsData)) {
-          positions = savingsData;
-          console.log('✅ Found array response with', positions.length, 'items');
-        }
-        
-        console.log('🔍 Processing', positions.length, 'savings positions');
-        
-        for (const position of positions) {
-          const amount = parseFloat(position.amount || position.totalAmount || 0);
-          const symbol = position.asset;
+        if (flexData.rows && Array.isArray(flexData.rows)) {
+          console.log('✅ Found', flexData.rows.length, 'flexible positions');
           
-          console.log(`📊 Position data:`, JSON.stringify(position, null, 2));
-          
-          if (amount > 0 && symbol) {
-            console.log(`📈 Processing savings ${symbol}: ${amount}`);
+          for (const position of flexData.rows) {
+            const amount = parseFloat(position.totalAmount || 0);
+            const symbol = position.asset;
             
-            // Get price from CryptoCompare
-            const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
-              body: { symbol }
-            });
-            
-            const price = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
-            console.log(`💵 ${symbol} price: ${price}`);
-            
-            holdings.push({
-              asset_symbol: symbol,
-              asset_name: `${symbol} (Savings)`,
-              amount,
-              price_usd: price,
-              value_usd: amount * price,
-            });
-          } else {
-            console.log(`⚠️ Skipping position - amount: ${amount}, symbol: ${symbol}`);
+            if (amount > 0 && symbol) {
+              console.log(`📈 Processing flexible ${symbol}: ${amount}`);
+              
+              // Get price from CryptoCompare
+              const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
+                body: { symbol }
+              });
+              
+              const price = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
+              console.log(`💵 ${symbol} price: ${price}`);
+              
+              holdings.push({
+                asset_symbol: symbol,
+                asset_name: `${symbol} (Flexible)`,
+                amount,
+                price_usd: price,
+                value_usd: amount * price,
+              });
+            }
           }
         }
         
-        console.log('✅ Total holdings after savings:', holdings.length);
+        console.log('✅ Total holdings after flexible:', holdings.length);
       } else {
-        const savingsError = await savingsResponse.text();
-        console.error('⚠️ Binance Savings API ERROR:', savingsError);
+        const flexError = await flexResponse.text();
+        console.error('⚠️ Simple Earn Flexible API ERROR:', flexError);
         console.log('💡 Continuing with spot balances only...');
+      }
+
+      // 3. FETCH SIMPLE EARN LOCKED POSITIONS
+      console.log('🔒 Fetching Binance Simple Earn Locked...');
+      const lockTimestamp = Date.now();
+      const lockQueryString = `timestamp=${lockTimestamp}`;
+      const lockSignature = createHmac('sha256', apiSecret)
+        .update(lockQueryString)
+        .digest('hex');
+      
+      const lockUrl = `https://api.binance.com/sapi/v1/simple-earn/locked/position?${lockQueryString}&signature=${lockSignature}`;
+      console.log('🌐 Calling Simple Earn Locked API...');
+      
+      const lockResponse = await fetch(lockUrl, {
+        headers: {
+          'X-MBX-APIKEY': apiKey
+        }
+      });
+
+      console.log('📊 Locked Response status:', lockResponse.status);
+
+      if (lockResponse.ok) {
+        const lockData = await lockResponse.json();
+        console.log('📦 Full Locked data:', JSON.stringify(lockData, null, 2));
+        
+        if (lockData.rows && Array.isArray(lockData.rows)) {
+          console.log('✅ Found', lockData.rows.length, 'locked positions');
+          
+          for (const position of lockData.rows) {
+            const amount = parseFloat(position.amount || 0);
+            const symbol = position.asset;
+            
+            if (amount > 0 && symbol) {
+              console.log(`📈 Processing locked ${symbol}: ${amount}`);
+              
+              // Get price from CryptoCompare
+              const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', {
+                body: { symbol }
+              });
+              
+              const price = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
+              console.log(`💵 ${symbol} price: ${price}`);
+              
+              holdings.push({
+                asset_symbol: symbol,
+                asset_name: `${symbol} (Locked)`,
+                amount,
+                price_usd: price,
+                value_usd: amount * price,
+              });
+            }
+          }
+        }
+        
+        console.log('✅ Total holdings after locked:', holdings.length);
+      } else {
+        const lockError = await lockResponse.text();
+        console.error('⚠️ Simple Earn Locked API ERROR:', lockError);
+        console.log('💡 Continuing without locked positions...');
       }
     } else if (exchangeLower === 'coinbase') {
       console.log('🔵 COINBASE SYNC - NOT IMPLEMENTED YET');
