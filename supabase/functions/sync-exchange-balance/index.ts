@@ -244,11 +244,15 @@ serve(async (req) => {
         console.error('⚠️ Simple Earn Locked API ERROR:', lockError);
         console.log('💡 Continuing without locked positions...');
       }
+    } else if (exchangeLower === 'kucoin') {
+      console.log('🟢 KUCOIN SYNC - NOT IMPLEMENTED YET');
+      throw new Error('KuCoin synchronization is not yet implemented. We are working on adding support for this exchange.');
     } else if (exchangeLower === 'coinbase') {
       console.log('🔵 COINBASE SYNC - NOT IMPLEMENTED YET');
-      console.log('⚠️ Coinbase requires OAuth, not simple API keys');
+      throw new Error('Coinbase synchronization is not yet implemented. Coinbase requires OAuth authentication.');
     } else if (exchangeLower === 'kraken') {
       console.log('🟣 KRAKEN SYNC - NOT IMPLEMENTED YET');
+      throw new Error('Kraken synchronization is not yet implemented. We are working on adding support for this exchange.');
     }
 
     // Delete existing holdings for this connection

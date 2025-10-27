@@ -111,6 +111,7 @@ export type Database = {
           created_at: string
           id: string
           last_updated_at: string
+          notes: string | null
           price_usd: number | null
           purchase_date: string | null
           purchase_price_usd: number | null
@@ -126,6 +127,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_updated_at?: string
+          notes?: string | null
           price_usd?: number | null
           purchase_date?: string | null
           purchase_price_usd?: number | null
@@ -141,6 +143,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_updated_at?: string
+          notes?: string | null
           price_usd?: number | null
           purchase_date?: string | null
           purchase_price_usd?: number | null

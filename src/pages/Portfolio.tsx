@@ -21,6 +21,7 @@ import {
   Calculator,
   Link as LinkIcon
 } from 'lucide-react';
+import { HoldingRow } from '@/components/HoldingRow';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,7 +32,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', '#6366f1'];
 
-interface Holding {
+export interface Holding {
   id: string;
   asset_symbol: string;
   asset_name: string;
@@ -42,6 +43,7 @@ interface Holding {
   asset_type: string;
   purchase_price_usd?: number;
   purchase_date?: string;
+  notes?: string;
 }
 
 interface WalletConnection {
@@ -598,7 +600,12 @@ export default function Portfolio() {
                 ) : (
                   <div className="space-y-2">
                     {holdings.map((holding) => (
-                      <HoldingRow key={holding.id} holding={holding} onDelete={deleteHolding} />
+                      <HoldingRow 
+                        key={holding.id} 
+                        holding={holding} 
+                        onDelete={deleteHolding}
+                        onUpdate={fetchHoldings}
+                      />
                     ))}
                   </div>
                 )}
@@ -606,14 +613,15 @@ export default function Portfolio() {
             </Card>
           </TabsContent>
 
-          {/* Crypto Tab */}
+          {/* Crypto Tab - Aggregated View */}
           <TabsContent value="crypto">
-            <AssetTypeContent 
+            <AggregatedAssetTypeContent 
               holdings={holdings.filter(h => h.asset_type === 'crypto')} 
               type="Crypto"
               loading={loading}
               onDelete={deleteHolding}
               onAdded={fetchHoldings}
+              onUpdate={fetchHoldings}
             />
           </TabsContent>
 
@@ -625,6 +633,7 @@ export default function Portfolio() {
               loading={loading}
               onDelete={deleteHolding}
               onAdded={fetchHoldings}
+              onUpdate={fetchHoldings}
             />
           </TabsContent>
 
@@ -636,6 +645,7 @@ export default function Portfolio() {
               loading={loading}
               onDelete={deleteHolding}
               onAdded={fetchHoldings}
+              onUpdate={fetchHoldings}
             />
           </TabsContent>
 
@@ -647,6 +657,7 @@ export default function Portfolio() {
               loading={loading}
               onDelete={deleteHolding}
               onAdded={fetchHoldings}
+              onUpdate={fetchHoldings}
             />
           </TabsContent>
 
@@ -831,58 +842,136 @@ export default function Portfolio() {
   );
 }
 
-// Helper component for holding rows
-function HoldingRow({ holding, onDelete }: { holding: Holding; onDelete: (id: string) => void }) {
+// Helper component for aggregated crypto assets
+function AggregatedAssetTypeContent({ 
+  holdings, 
+  type, 
+  loading, 
+  onDelete, 
+  onAdded,
+  onUpdate
+}: { 
+  holdings: Holding[]; 
+  type: string; 
+  loading: boolean; 
+  onDelete: (id: string) => void;
+  onAdded: () => void;
+  onUpdate: () => void;
+}) {
+  // Aggregate holdings by asset_symbol
+  const aggregatedHoldings = holdings.reduce((acc, holding) => {
+    const baseSymbol = holding.asset_symbol;
+    
+    if (!acc[baseSymbol]) {
+      acc[baseSymbol] = {
+        id: holding.id,
+        asset_symbol: baseSymbol,
+        asset_name: holding.asset_name?.replace(/\s*\(.*?\)\s*/g, '').trim() || baseSymbol,
+        amount: 0,
+        price_usd: holding.price_usd,
+        value_usd: 0,
+        last_updated_at: holding.last_updated_at,
+        asset_type: holding.asset_type,
+        subHoldings: []
+      };
+    }
+    
+    acc[baseSymbol].amount += Number(holding.amount);
+    acc[baseSymbol].value_usd += Number(holding.value_usd);
+    acc[baseSymbol].subHoldings.push(holding);
+    
+    // Use the most recent update time
+    if (new Date(holding.last_updated_at) > new Date(acc[baseSymbol].last_updated_at)) {
+      acc[baseSymbol].last_updated_at = holding.last_updated_at;
+    }
+    
+    return acc;
+  }, {} as Record<string, any>);
+
+  const aggregatedList = Object.values(aggregatedHoldings);
+
   return (
-    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
-      <div className="flex-1">
-        <div className="flex items-center gap-3">
-          <div>
-            <p className="font-semibold text-lg">{holding.asset_symbol}</p>
-            <p className="text-sm text-muted-foreground">
-              {holding.asset_name || holding.asset_symbol}
-              <Badge variant="outline" className="ml-2">{holding.asset_type}</Badge>
+    <Card>
+      <CardHeader>
+        <CardTitle>{type} Holdings (Aggregated)</CardTitle>
+        <p className="text-sm text-muted-foreground">Duplicate tokens are summed together</p>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading...</div>
+        ) : aggregatedList.length === 0 ? (
+          <div className="text-center py-12">
+            <Wallet className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            <p className="text-lg font-semibold mb-2">No {type} Holdings</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Add your first {type.toLowerCase()} holding to start tracking
             </p>
+            <AddHoldingDialog onAdded={onAdded} />
           </div>
-        </div>
-      </div>
-      
-      <div className="text-right mr-4">
-        <p className="text-sm text-muted-foreground">Amount</p>
-        <p className="font-semibold">
-          {Number(holding.amount).toFixed(8)} {holding.asset_symbol}
-        </p>
-      </div>
+        ) : (
+          <div className="space-y-2">
+            {aggregatedList.map((aggregated) => (
+              <div key={aggregated.id} className="space-y-2">
+                {/* Aggregated Summary Row */}
+                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors border-l-4 border-primary">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <p className="font-semibold text-lg">{aggregated.asset_symbol}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {aggregated.asset_name}
+                          <Badge variant="outline" className="ml-2">{aggregated.asset_type}</Badge>
+                          <Badge variant="secondary" className="ml-2">{aggregated.subHoldings.length} source(s)</Badge>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right mr-4">
+                    <p className="text-sm text-muted-foreground">Total Amount</p>
+                    <p className="font-semibold">
+                      {aggregated.amount.toFixed(8)} {aggregated.asset_symbol}
+                    </p>
+                  </div>
 
-      <div className="text-right mr-4">
-        <p className="text-sm text-muted-foreground">Price</p>
-        <p className="font-semibold">
-          ${(Number(holding.price_usd) || 0).toLocaleString(undefined, { 
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2 
-          })}
-        </p>
-      </div>
+                  <div className="text-right mr-4">
+                    <p className="text-sm text-muted-foreground">Price</p>
+                    <p className="font-semibold">
+                      ${aggregated.price_usd.toLocaleString(undefined, { 
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2 
+                      })}
+                    </p>
+                  </div>
 
-      <div className="text-right mr-4">
-        <p className="text-sm text-muted-foreground">Value</p>
-        <p className="font-bold text-lg">
-          ${(Number(holding.value_usd) || 0).toLocaleString(undefined, { 
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2 
-          })}
-        </p>
-      </div>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => onDelete(holding.id)}
-        className="text-destructive hover:text-destructive"
-      >
-        <Trash2 className="w-4 h-4" />
-      </Button>
-    </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Total Value</p>
+                    <p className="font-bold text-lg text-primary">
+                      ${aggregated.value_usd.toLocaleString(undefined, { 
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2 
+                      })}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Individual Holdings (Sub-items) */}
+                <div className="ml-8 space-y-2">
+                  {aggregated.subHoldings.map((holding: Holding) => (
+                    <HoldingRow 
+                      key={holding.id} 
+                      holding={holding} 
+                      onDelete={onDelete}
+                      onUpdate={onUpdate}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -892,13 +981,15 @@ function AssetTypeContent({
   type, 
   loading, 
   onDelete, 
-  onAdded 
+  onAdded,
+  onUpdate
 }: { 
   holdings: Holding[]; 
   type: string; 
   loading: boolean; 
   onDelete: (id: string) => void;
   onAdded: () => void;
+  onUpdate: () => void;
 }) {
   return (
     <Card>
@@ -920,7 +1011,12 @@ function AssetTypeContent({
         ) : (
           <div className="space-y-2">
             {holdings.map((holding) => (
-              <HoldingRow key={holding.id} holding={holding} onDelete={onDelete} />
+              <HoldingRow 
+                key={holding.id} 
+                holding={holding} 
+                onDelete={onDelete}
+                onUpdate={onUpdate}
+              />
             ))}
           </div>
         )}

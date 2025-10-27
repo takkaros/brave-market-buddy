@@ -113,7 +113,7 @@ serve(async (req) => {
           const errorText = await btcResponse.text();
           console.error('❌ blockchain.info API ERROR:', errorText);
           console.error('❌ Status:', btcResponse.status);
-          throw new Error(`Failed to fetch xpub balance: ${errorText}`);
+          throw new Error(`Bitcoin sync failed: blockchain.info API returned status ${btcResponse.status}. ${errorText.substring(0, 100)}`);
         }
       } else {
         // Regular Bitcoin address
@@ -145,7 +145,7 @@ serve(async (req) => {
         } else {
           const errorText = await btcResponse.text();
           console.error('❌ blockchain.info API ERROR:', errorText);
-          throw new Error(`Failed to fetch Bitcoin balance: ${errorText}`);
+          throw new Error(`Bitcoin sync failed: blockchain.info API returned status ${btcResponse.status}. ${errorText.substring(0, 100)}`);
         }
       }
     } else if (blockchainLower === 'ethereum') {

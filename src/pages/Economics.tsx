@@ -173,6 +173,10 @@ export default function Economics() {
               <MapPin className="w-4 h-4" />
               European Union
             </TabsTrigger>
+            <TabsTrigger value="realestate" className="gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Real Estate
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="global">
@@ -269,6 +273,171 @@ export default function Economics() {
                       ))}
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="realestate">
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Real Estate Market Indicators</CardTitle>
+                  <p className="text-sm text-muted-foreground">Key metrics for property investment analysis</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* US Housing Indicators */}
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground mb-1">US Home Price Index</p>
+                            <p className="text-2xl font-bold">285.4</p>
+                            <div className="flex items-center gap-1 mt-2">
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                              <span className="text-sm text-green-500">+4.2%</span>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-border">
+                              <p className="text-xs text-muted-foreground">Risk Level</p>
+                              <Badge variant="outline" className="mt-1 bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+                                Moderate
+                              </Badge>
+                            </div>
+                          </div>
+                          <Badge variant="outline">CSUSHPISA</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground mb-1">Mortgage Rates (30Y)</p>
+                            <p className="text-2xl font-bold">6.85%</p>
+                            <div className="flex items-center gap-1 mt-2">
+                              <TrendingDown className="w-4 h-4 text-green-500" />
+                              <span className="text-sm text-green-500">-0.3%</span>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-border">
+                              <p className="text-xs text-muted-foreground">Risk Level</p>
+                              <Badge variant="outline" className="mt-1 bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+                                Moderate
+                              </Badge>
+                            </div>
+                          </div>
+                          <Badge variant="outline">MORTGAGE30US</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground mb-1">Housing Starts (Annual)</p>
+                            <p className="text-2xl font-bold">1.42M</p>
+                            <div className="flex items-center gap-1 mt-2">
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                              <span className="text-sm text-green-500">+2.8%</span>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-border">
+                              <p className="text-xs text-muted-foreground">Risk Level</p>
+                              <Badge variant="outline" className="mt-1 bg-green-500/10 text-green-500 border-green-500/20">
+                                Low
+                              </Badge>
+                            </div>
+                          </div>
+                          <Badge variant="outline">HOUST</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Cyprus Housing */}
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground mb-1">Cyprus Property Prices</p>
+                            <p className="text-2xl font-bold">118.5</p>
+                            <div className="flex items-center gap-1 mt-2">
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                              <span className="text-sm text-green-500">+5.1%</span>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-border">
+                              <p className="text-xs text-muted-foreground">Risk Level</p>
+                              <Badge variant="outline" className="mt-1 bg-green-500/10 text-green-500 border-green-500/20">
+                                Low
+                              </Badge>
+                            </div>
+                          </div>
+                          <Badge variant="outline">CY-HPI</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* EU Housing */}
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground mb-1">EU House Price Index</p>
+                            <p className="text-2xl font-bold">132.8</p>
+                            <div className="flex items-center gap-1 mt-2">
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                              <span className="text-sm text-green-500">+3.7%</span>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-border">
+                              <p className="text-xs text-muted-foreground">Risk Level</p>
+                              <Badge variant="outline" className="mt-1 bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+                                Moderate
+                              </Badge>
+                            </div>
+                          </div>
+                          <Badge variant="outline">EU-HPI</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Commercial Real Estate */}
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground mb-1">Commercial RE Index</p>
+                            <p className="text-2xl font-bold">178.2</p>
+                            <div className="flex items-center gap-1 mt-2">
+                              <TrendingDown className="w-4 h-4 text-red-500" />
+                              <span className="text-sm text-red-500">-1.2%</span>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-border">
+                              <p className="text-xs text-muted-foreground">Risk Level</p>
+                              <Badge variant="outline" className="mt-1 bg-red-500/10 text-red-500 border-red-500/20">
+                                High
+                              </Badge>
+                            </div>
+                          </div>
+                          <Badge variant="outline">COMMRE</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="mt-6 p-4 bg-muted/30 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <Info className="w-5 h-5 text-primary mt-0.5" />
+                      <div>
+                        <p className="font-medium mb-2">Understanding Real Estate Metrics</p>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• <strong>Home Price Index:</strong> Tracks changes in residential property values</li>
+                          <li>• <strong>Mortgage Rates:</strong> Average interest rates for 30-year fixed mortgages</li>
+                          <li>• <strong>Housing Starts:</strong> Number of new residential construction projects begun annually</li>
+                          <li>• <strong>Risk Levels:</strong> Low (favorable conditions), Moderate (stable), High (caution advised)</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
