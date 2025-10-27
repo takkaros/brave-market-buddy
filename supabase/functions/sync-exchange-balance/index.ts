@@ -15,8 +15,8 @@ serve(async (req) => {
 
   try {
     console.log('==================== EXCHANGE SYNC START ====================');
-    const { connectionId, exchangeName, apiKey, apiSecret } = await req.json();
-    console.log('📥 INPUT:', JSON.stringify({ connectionId, exchangeName }, null, 2));
+    const { connectionId } = await req.json();
+    console.log('📥 INPUT:', JSON.stringify({ connectionId }, null, 2));
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -35,6 +35,31 @@ serve(async (req) => {
     }
     
     console.log('✅ Authenticated user:', user.id);
+
+    // Fetch connection details from database and verify ownership
+    const { data: connection, error: connError } = await supabase
+      .from('portfolio_connections')
+      .select('api_key, api_secret, api_passphrase, exchange_name, user_id')
+      .eq('id', connectionId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (connError || !connection) {
+      console.error('❌ CONNECTION ERROR:', connError);
+      return new Response(JSON.stringify({ 
+        error: 'Connection not found or unauthorized',
+        logs: ['❌ Invalid connection ID or access denied']
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const exchangeName = connection.exchange_name;
+    const apiKey = connection.api_key;
+    const apiSecret = connection.api_secret;
+    
+    console.log('🔐 Using stored credentials for exchange:', exchangeName);
 
     let holdings: any[] = [];
     const exchangeLower = exchangeName.toLowerCase();

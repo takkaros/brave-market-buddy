@@ -14,8 +14,8 @@ serve(async (req) => {
 
   try {
     console.log('==================== WALLET SYNC START ====================');
-    const { connectionId, blockchain, walletAddress } = await req.json();
-    console.log('📥 INPUT:', JSON.stringify({ connectionId, blockchain, walletAddress }, null, 2));
+    const { connectionId } = await req.json();
+    console.log('📥 INPUT:', JSON.stringify({ connectionId }, null, 2));
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -34,6 +34,30 @@ serve(async (req) => {
     }
     
     console.log('✅ Authenticated user:', user.id);
+
+    // Fetch connection details from database and verify ownership
+    const { data: connection, error: connError } = await supabase
+      .from('portfolio_connections')
+      .select('wallet_address, blockchain, user_id')
+      .eq('id', connectionId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (connError || !connection) {
+      console.error('❌ CONNECTION ERROR:', connError);
+      return new Response(JSON.stringify({ 
+        error: 'Connection not found or unauthorized',
+        logs: ['❌ Invalid connection ID or access denied']
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const blockchain = connection.blockchain;
+    const walletAddress = connection.wallet_address;
+    
+    console.log('🔐 Using stored wallet details for blockchain:', blockchain);
 
     let balance = 0;
     let holdings: any[] = [];

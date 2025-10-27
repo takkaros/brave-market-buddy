@@ -135,26 +135,26 @@ export default function Portfolio() {
     }
   };
 
-  const syncWallet = async (connectionId: string, blockchain: string, walletAddress: string) => {
+  const syncWallet = async (connectionId: string) => {
     setSyncingWallet(connectionId);
     const timestamp = new Date().toISOString();
     
     setSyncLogs(prev => [...prev, { 
       timestamp, 
-      message: `🔄 Syncing ${blockchain} wallet...`, 
+      message: `🔄 Syncing wallet...`, 
       type: 'info' 
     }]);
 
     try {
       const { data, error } = await supabase.functions.invoke('sync-wallet-balance', {
-        body: { connectionId, blockchain, walletAddress }
+        body: { connectionId }
       });
 
       if (error) {
         console.error('Sync error:', error);
         setSyncLogs(prev => [...prev, { 
           timestamp: new Date().toISOString(), 
-          message: `❌ ${blockchain} sync failed: ${error.message}`, 
+          message: `❌ Wallet sync failed: ${error.message}`, 
           type: 'error' 
         }]);
         toast({
@@ -174,7 +174,7 @@ export default function Portfolio() {
         
         toast({
           title: 'Wallet Synced',
-          description: `${blockchain} wallet synced successfully`,
+          description: 'Wallet synced successfully',
         });
         fetchHoldings();
         fetchWalletConnections();
@@ -196,26 +196,26 @@ export default function Portfolio() {
     }
   };
 
-  const syncExchange = async (connectionId: string, exchangeName: string, apiKey: string, apiSecret: string) => {
+  const syncExchange = async (connectionId: string) => {
     setSyncingWallet(connectionId);
     const timestamp = new Date().toISOString();
     
     setSyncLogs(prev => [...prev, { 
       timestamp, 
-      message: `🔄 Syncing ${exchangeName} exchange...`, 
+      message: `🔄 Syncing exchange...`, 
       type: 'info' 
     }]);
 
     try {
       const { data, error } = await supabase.functions.invoke('sync-exchange-balance', {
-        body: { connectionId, exchangeName, apiKey, apiSecret }
+        body: { connectionId }
       });
 
       if (error) {
         console.error('Sync error:', error);
         setSyncLogs(prev => [...prev, { 
           timestamp: new Date().toISOString(), 
-          message: `❌ ${exchangeName} sync failed: ${error.message}`, 
+          message: `❌ Exchange sync failed: ${error.message}`, 
           type: 'error' 
         }]);
         toast({
@@ -235,7 +235,7 @@ export default function Portfolio() {
         
         toast({
           title: 'Exchange Synced',
-          description: `${exchangeName} synced successfully`,
+          description: 'Exchange synced successfully',
         });
         fetchHoldings();
         fetchExchangeConnections();
@@ -702,7 +702,7 @@ export default function Portfolio() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => syncWallet(connection.id, connection.blockchain, connection.wallet_address)}
+                            onClick={() => syncWallet(connection.id)}
                             disabled={syncingWallet === connection.id}
                           >
                             <RefreshCw className={`w-4 h-4 mr-2 ${syncingWallet === connection.id ? 'animate-spin' : ''}`} />
@@ -764,12 +764,7 @@ export default function Portfolio() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => syncExchange(
-                              connection.id,
-                              connection.exchange_name,
-                              connection.api_key,
-                              connection.api_secret
-                            )}
+                            onClick={() => syncExchange(connection.id)}
                             disabled={syncingWallet === connection.id}
                           >
                             <RefreshCw className={`w-4 h-4 mr-2 ${syncingWallet === connection.id ? 'animate-spin' : ''}`} />

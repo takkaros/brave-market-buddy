@@ -18,11 +18,24 @@ const holdingSchema = z.object({
 });
 
 const apiConnectionSchema = z.object({
-  name: z.string().min(1, 'Connection name is required'),
+  name: z.string().trim().min(1, 'Connection name is required').max(100, 'Connection name too long'),
   exchange_name: z.string().min(1, 'Exchange is required'),
-  api_key: z.string().min(1, 'API Key is required'),
-  api_secret: z.string().min(1, 'API Secret is required'),
-  api_passphrase: z.string().optional(),
+  api_key: z.string()
+    .trim()
+    .min(10, 'API key must be at least 10 characters')
+    .max(200, 'API key too long')
+    .regex(/^[A-Za-z0-9_-]+$/, 'API key contains invalid characters'),
+  api_secret: z.string()
+    .trim()
+    .min(10, 'API secret must be at least 10 characters')
+    .max(200, 'API secret too long')
+    .regex(/^[A-Za-z0-9_-]+$/, 'API secret contains invalid characters'),
+  api_passphrase: z.string()
+    .trim()
+    .max(100, 'Passphrase too long')
+    .regex(/^[A-Za-z0-9_-]*$/, 'Passphrase contains invalid characters')
+    .optional()
+    .or(z.literal('')),
 });
 
 const walletSchema = z.object({
