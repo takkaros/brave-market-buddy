@@ -90,7 +90,6 @@ export default function Portfolio() {
       if (error) throw error;
       setHoldings(data || []);
     } catch (error: any) {
-      console.error('Failed to fetch holdings:', error);
       toast({
         title: 'Failed to Load Portfolio',
         description: error.message,
@@ -115,7 +114,7 @@ export default function Portfolio() {
       if (error) throw error;
       setWalletConnections(data || []);
     } catch (error: any) {
-      console.error('Failed to fetch wallet connections:', error);
+      // Error handled silently
     }
   };
 
@@ -133,7 +132,7 @@ export default function Portfolio() {
       if (error) throw error;
       setExchangeConnections(data || []);
     } catch (error: any) {
-      console.error('Failed to fetch exchange connections:', error);
+      // Error handled silently
     }
   };
 
@@ -153,8 +152,7 @@ export default function Portfolio() {
       });
 
       if (error) {
-        console.error('Sync error:', error);
-        setSyncLogs(prev => [...prev, { 
+        setSyncLogs(prev => [...prev, {
           timestamp: new Date().toISOString(), 
           message: `❌ Wallet sync failed: ${error.message}`, 
           type: 'error' 
@@ -182,8 +180,7 @@ export default function Portfolio() {
         fetchWalletConnections();
       }
     } catch (error: any) {
-      console.error('Sync failed:', error);
-      setSyncLogs(prev => [...prev, { 
+      setSyncLogs(prev => [...prev, {
         timestamp: new Date().toISOString(), 
         message: `❌ Error: ${error.message}`, 
         type: 'error' 
@@ -214,8 +211,7 @@ export default function Portfolio() {
       });
 
       if (error) {
-        console.error('Sync error:', error);
-        setSyncLogs(prev => [...prev, { 
+        setSyncLogs(prev => [...prev, {
           timestamp: new Date().toISOString(), 
           message: `❌ Exchange sync failed: ${error.message}`, 
           type: 'error' 
@@ -243,8 +239,7 @@ export default function Portfolio() {
         fetchExchangeConnections();
       }
     } catch (error: any) {
-      console.error('Sync failed:', error);
-      setSyncLogs(prev => [...prev, { 
+      setSyncLogs(prev => [...prev, {
         timestamp: new Date().toISOString(), 
         message: `❌ Error: ${error.message}`, 
         type: 'error' 
@@ -325,7 +320,6 @@ export default function Portfolio() {
             }
             return holding;
           } catch (error) {
-            console.error(`Failed to update ${holding.asset_symbol}:`, error);
             return holding;
           }
         })

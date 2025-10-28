@@ -71,7 +71,6 @@ const Crypto = () => {
         setAiAnalysis(data.analysis);
       }
     } catch (error) {
-      console.error('Error fetching AI analysis:', error);
       toast({
         title: "Failed to fetch AI analysis",
         description: error instanceof Error ? error.message : "Unknown error",
@@ -136,7 +135,6 @@ const Crypto = () => {
       // Fetch AI analysis with updated prices and holdings
       await fetchAIAnalysis(newBtcPrice, newEthPrice, holdingsData || []);
     } catch (error) {
-      console.error('Error fetching crypto data:', error);
       toast({
         title: "Failed to fetch crypto data",
         description: error instanceof Error ? error.message : "Unknown error",

@@ -186,7 +186,7 @@ const RiskForecast = ({ forecast, loading }: Props) => {
             <div className="p-4 bg-risk-low/10 border border-risk-low rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <h5 className="font-semibold text-risk-low">Bull Case</h5>
-                <Badge className="bg-risk-low text-white">
+                <Badge className="bg-risk-low text-primary-foreground">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   {forecast.scenarios.bull.probability}
                 </Badge>
@@ -207,7 +207,7 @@ const RiskForecast = ({ forecast, loading }: Props) => {
             <div className="p-4 bg-risk-elevated/10 border border-risk-elevated rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <h5 className="font-semibold text-risk-elevated">Bear Case</h5>
-                <Badge className="bg-risk-elevated text-white">
+                <Badge className="bg-risk-elevated text-primary-foreground">
                   <TrendingDown className="w-3 h-3 mr-1" />
                   {forecast.scenarios.bear.probability}
                 </Badge>

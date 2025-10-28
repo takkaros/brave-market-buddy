@@ -58,7 +58,6 @@ const Dashboard = () => {
         setOverallAnalysis(data.analysis);
       }
     } catch (error) {
-      console.error('Error fetching overall analysis:', error);
       toast.error('Failed to fetch overall market analysis');
     } finally {
       setAnalysisLoading(false);
@@ -86,7 +85,6 @@ const Dashboard = () => {
 
       setRiskForecast(forecastData.forecast);
     } catch (error: any) {
-      console.error('Risk forecast error:', error);
       toast.error('Failed to generate risk forecast');
     } finally {
       setForecastLoading(false);
@@ -118,7 +116,7 @@ const Dashboard = () => {
 
         setMarketData(newMarketData);
       } catch (error) {
-        console.error('Error fetching market data:', error);
+        // Error handled silently
       }
     };
 

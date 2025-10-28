@@ -76,7 +76,6 @@ const Housing = () => {
         }
       }
     } catch (error) {
-      console.error('Error fetching Cyprus housing data:', error);
       toast.error('Failed to fetch Cyprus housing data');
     } finally {
       setLoading(false);

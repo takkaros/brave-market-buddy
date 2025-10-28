@@ -53,7 +53,7 @@ const AIChat = () => {
           });
         }
       } catch (error) {
-        console.error('Failed to fetch portfolio stats:', error);
+        // Error handled silently
       }
     };
 
@@ -98,7 +98,6 @@ const AIChat = () => {
         throw new Error('Invalid response format');
       }
     } catch (error) {
-      console.error('Error:', error);
       const errorMessage: Message = {
         role: 'assistant',
         content: 'Sorry, I encountered an error. Please try again later.',

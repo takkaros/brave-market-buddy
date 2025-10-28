@@ -70,7 +70,6 @@ const Metals = () => {
         }
       }
     } catch (error) {
-      console.error('Error fetching metals data:', error);
       toast.error('Failed to fetch metals data');
     } finally {
       setLoading(false);

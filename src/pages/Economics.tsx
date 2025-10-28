@@ -54,7 +54,6 @@ export default function Economics() {
       setCyprusIndicators(transformData(cyprus));
       setEuIndicators(transformData(eu));
     } catch (error: any) {
-      console.error('Failed to fetch indicators:', error);
       toast({
         title: 'Failed to Load Data',
         description: error.message,
@@ -107,7 +106,6 @@ export default function Economics() {
       
       // If no data found, automatically sync for the first time
       if (globalIndicators.length === 0 && cyprusIndicators.length === 0 && euIndicators.length === 0) {
-        console.log('No economic data found, syncing for the first time...');
         syncData();
       }
     };

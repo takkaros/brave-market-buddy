@@ -58,7 +58,6 @@ const Bonds = () => {
         }
       }
     } catch (error) {
-      console.error('Error fetching bond data:', error);
       toast.error('Failed to fetch bond data');
     } finally {
       setLoading(false);

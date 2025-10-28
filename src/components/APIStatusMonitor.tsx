@@ -52,7 +52,6 @@ const APIStatusMonitor = () => {
         }
       }
     } catch (error) {
-      console.error('Error checking API health:', error);
       toast({
         title: "Health Check Failed",
         description: error instanceof Error ? error.message : "Unknown error",

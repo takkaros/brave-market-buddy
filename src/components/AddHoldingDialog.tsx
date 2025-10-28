@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,7 +89,7 @@ export default function AddHoldingDialog({ onAdded }: Props) {
     wallet_address: '',
   });
 
-  const fetchPrice = async (symbol: string) => {
+  const fetchPrice = useCallback(async (symbol: string) => {
     if (!symbol) return;
     setFetchingPrice(true);
     try {
@@ -107,7 +107,6 @@ export default function AddHoldingDialog({ onAdded }: Props) {
         });
       }
     } catch (error) {
-      console.error('Failed to fetch price:', error);
       toast({
         title: 'Price Fetch Failed',
         description: 'Could not fetch current price',
@@ -116,7 +115,7 @@ export default function AddHoldingDialog({ onAdded }: Props) {
     } finally {
       setFetchingPrice(false);
     }
-  };
+  }, [toast]);
 
   const handleQuickSelect = (asset: { symbol: string; name: string }) => {
     setForm(prev => ({
@@ -134,7 +133,7 @@ export default function AddHoldingDialog({ onAdded }: Props) {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [form.asset_symbol]);
+  }, [form.asset_symbol, fetchPrice]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -308,7 +307,6 @@ export default function AddHoldingDialog({ onAdded }: Props) {
       );
 
       if (syncError) {
-        console.error('Sync error:', syncError);
         toast({
           title: 'Wallet Added',
           description: `${validated.blockchain} wallet connected, but balance sync failed. Try syncing manually.`,
