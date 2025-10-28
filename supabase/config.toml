@@ -21,20 +21,26 @@ verify_jwt = false
 [functions.check-api-health]
 verify_jwt = false
 
+[functions.sync-wallet-balance]
+verify_jwt = true
+
+[functions.sync-exchange-balance]
+verify_jwt = true
+
+[functions.parse-portfolio-csv]
+verify_jwt = true
+
 [functions.ai-chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.crypto-market-analysis]
-verify_jwt = false
+verify_jwt = true
 
 [functions.overall-market-analysis]
-verify_jwt = false
+verify_jwt = true
 
 [functions.risk-forecast]
-verify_jwt = false
+verify_jwt = true
 
 [functions.portfolio-analysis]
-verify_jwt = false
-
-[functions.sync-wallet-balance]
 verify_jwt = true

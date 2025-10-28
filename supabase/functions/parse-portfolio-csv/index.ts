@@ -52,13 +52,60 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Unauthorized - Authentication required',
+        timestamp: new Date().toISOString()
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error('Authentication failed:', authError?.message);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Unauthorized - Invalid token',
+        timestamp: new Date().toISOString()
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Authenticated CSV parse request from user:', user.id);
+
     const { csvText } = await req.json();
     
-    if (!csvText) {
-      throw new Error('CSV text is required');
+    // Input validation - Size check
+    if (!csvText || typeof csvText !== 'string') {
+      throw new Error('Invalid CSV data type');
+    }
+
+    const MAX_SIZE = 1_000_000; // 1MB
+    if (csvText.length > MAX_SIZE) {
+      throw new Error(`CSV too large. Maximum size: ${MAX_SIZE / 1_000_000}MB`);
     }
 
     const lines = csvText.trim().split('\n');
+    
+    // Input validation - Row count
+    const MAX_ROWS = 1000;
+    if (lines.length > MAX_ROWS) {
+      throw new Error(`Too many rows. Maximum: ${MAX_ROWS} rows`);
+    }
+
     if (lines.length < 2) {
       throw new Error('CSV must have at least a header row and one data row');
     }
@@ -66,6 +113,23 @@ serve(async (req) => {
     // Parse header
     const headerLine = lines[0];
     const headers = headerLine.split(',').map((h: string) => h.trim().replace(/^"|"$/g, ''));
+
+    // Input validation - Column count
+    const MAX_COLUMNS = 50;
+    if (headers.length > MAX_COLUMNS) {
+      throw new Error(`Too many columns. Maximum: ${MAX_COLUMNS} columns`);
+    }
+
+    // Input validation - Header content
+    for (const header of headers) {
+      if (header.length > 100) {
+        throw new Error('Column name too long (max 100 characters)');
+      }
+      // Prevent injection attacks in column names
+      if (!/^[a-zA-Z0-9\s_-]+$/.test(header) && header !== '') {
+        throw new Error(`Invalid characters in column name: "${header}"`);
+      }
+    }
 
     console.log('Detected headers:', headers);
 
