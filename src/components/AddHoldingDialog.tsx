@@ -59,13 +59,39 @@ interface Props {
   onAdded: () => void;
 }
 
-const POPULAR_ASSETS = [
-  { symbol: 'BTC', name: 'Bitcoin' },
-  { symbol: 'ETH', name: 'Ethereum' },
-  { symbol: 'SOL', name: 'Solana' },
-  { symbol: 'USDT', name: 'Tether' },
-  { symbol: 'USDC', name: 'USD Coin' },
-];
+const POPULAR_ASSETS_BY_TYPE: Record<string, Array<{ symbol: string; name: string }>> = {
+  crypto: [
+    { symbol: 'BTC', name: 'Bitcoin' },
+    { symbol: 'ETH', name: 'Ethereum' },
+    { symbol: 'SOL', name: 'Solana' },
+    { symbol: 'USDT', name: 'Tether' },
+    { symbol: 'USDC', name: 'USD Coin' },
+  ],
+  stock: [
+    { symbol: 'AAPL', name: 'Apple Inc.' },
+    { symbol: 'GOOGL', name: 'Alphabet Inc.' },
+    { symbol: 'MSFT', name: 'Microsoft Corp.' },
+    { symbol: 'TSLA', name: 'Tesla Inc.' },
+    { symbol: 'NVDA', name: 'NVIDIA Corp.' },
+  ],
+  etf: [
+    { symbol: 'SPY', name: 'S&P 500 ETF' },
+    { symbol: 'QQQ', name: 'Nasdaq-100 ETF' },
+    { symbol: 'VTI', name: 'Total Stock Market ETF' },
+    { symbol: 'VOO', name: 'S&P 500 ETF' },
+    { symbol: 'IVV', name: 'S&P 500 Index ETF' },
+  ],
+  bond: [
+    { symbol: 'AGG', name: 'Core Bond ETF' },
+    { symbol: 'BND', name: 'Total Bond Market ETF' },
+    { symbol: 'TLT', name: '20+ Year Treasury Bond' },
+  ],
+  commodity: [
+    { symbol: 'GLD', name: 'Gold' },
+    { symbol: 'SLV', name: 'Silver' },
+    { symbol: 'USO', name: 'Crude Oil' },
+  ],
+};
 
 export default function AddHoldingDialog({ onAdded }: Props) {
   const { user } = useAuth();
@@ -80,6 +106,9 @@ export default function AddHoldingDialog({ onAdded }: Props) {
     asset_name: '',
     amount: '',
     asset_type: 'crypto',
+    exchange: '',
+    purchase_price: '',
+    purchase_date: new Date().toISOString().split('T')[0],
   });
   const [fetchingPrice, setFetchingPrice] = useState(false);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
@@ -204,17 +233,24 @@ export default function AddHoldingDialog({ onAdded }: Props) {
       const priceUsd = currentPrice;
       const valueUsd = amount * priceUsd;
 
+      // For stocks, use purchase price if provided, otherwise use current price
+      const finalPrice = form.asset_type === 'stock' && form.purchase_price 
+        ? parseFloat(form.purchase_price) 
+        : priceUsd;
+      const finalValue = amount * finalPrice;
+
       const { error } = await supabase.from('portfolio_holdings').insert({
         user_id: user.id,
         asset_symbol: validated.asset_symbol.toUpperCase(),
         asset_name: validated.asset_name,
         amount,
         price_usd: priceUsd,
-        value_usd: valueUsd,
+        value_usd: finalValue,
         connection_id: null,
         asset_type: form.asset_type,
-        purchase_price_usd: priceUsd,
-        purchase_date: new Date().toISOString(),
+        purchase_price_usd: form.purchase_price ? parseFloat(form.purchase_price) : priceUsd,
+        purchase_date: form.purchase_date ? new Date(form.purchase_date).toISOString() : new Date().toISOString(),
+        notes: form.exchange ? `Exchange: ${form.exchange}` : null,
       });
 
       if (error) throw error;
@@ -224,7 +260,15 @@ export default function AddHoldingDialog({ onAdded }: Props) {
         description: `${validated.asset_symbol} added to your portfolio`,
       });
 
-      setForm({ asset_symbol: '', asset_name: '', amount: '', asset_type: 'crypto' });
+      setForm({ 
+        asset_symbol: '', 
+        asset_name: '', 
+        amount: '', 
+        asset_type: 'crypto',
+        exchange: '',
+        purchase_price: '',
+        purchase_date: new Date().toISOString().split('T')[0],
+      });
       setCurrentPrice(null);
       setOpen(false);
       onAdded();
@@ -501,29 +545,71 @@ export default function AddHoldingDialog({ onAdded }: Props) {
           {/* Manual Entry Tab */}
           <TabsContent value="manual" className="space-y-4 mt-4">
             <div>
-              <Label className="text-sm mb-2 block">Popular Assets</Label>
-              <div className="flex flex-wrap gap-2">
-                {POPULAR_ASSETS.map(asset => (
-                  <Button
-                    key={asset.symbol}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickSelect(asset)}
-                  >
-                    {asset.symbol}
-                  </Button>
-                ))}
-              </div>
+              <Label htmlFor="asset_type">Asset Type</Label>
+              <Select
+                value={form.asset_type}
+                onValueChange={(value) => setForm({ 
+                  ...form, 
+                  asset_type: value,
+                  asset_symbol: '',
+                  asset_name: '',
+                })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select asset type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="crypto">Cryptocurrency</SelectItem>
+                  <SelectItem value="stock">Stock</SelectItem>
+                  <SelectItem value="bond">Bond</SelectItem>
+                  <SelectItem value="etf">ETF</SelectItem>
+                  <SelectItem value="real_estate">Real Estate</SelectItem>
+                  <SelectItem value="commodity">Commodity</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+
+            {POPULAR_ASSETS_BY_TYPE[form.asset_type] && (
+              <div>
+                <Label className="text-sm mb-2 block">
+                  Popular {form.asset_type === 'crypto' ? 'Cryptocurrencies' : 
+                           form.asset_type === 'stock' ? 'Stocks' :
+                           form.asset_type === 'etf' ? 'ETFs' :
+                           form.asset_type === 'bond' ? 'Bonds' :
+                           form.asset_type === 'commodity' ? 'Commodities' : 'Assets'}
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {POPULAR_ASSETS_BY_TYPE[form.asset_type].map(asset => (
+                    <Button
+                      key={asset.symbol}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickSelect(asset)}
+                    >
+                      {asset.symbol}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="symbol">Symbol</Label>
+                  <Label htmlFor="symbol">
+                    {form.asset_type === 'stock' ? 'Ticker Symbol' : 
+                     form.asset_type === 'crypto' ? 'Symbol' : 
+                     form.asset_type === 'real_estate' ? 'Property ID' : 'Symbol'}
+                  </Label>
                   <Input
                     id="symbol"
-                    placeholder="BTC"
+                    placeholder={
+                      form.asset_type === 'stock' ? 'AAPL' :
+                      form.asset_type === 'crypto' ? 'BTC' :
+                      form.asset_type === 'real_estate' ? 'PROP-001' : 'Symbol'
+                    }
                     value={form.asset_symbol}
                     onChange={(e) => setForm({ ...form, asset_symbol: e.target.value.toUpperCase() })}
                     maxLength={10}
@@ -531,10 +617,17 @@ export default function AddHoldingDialog({ onAdded }: Props) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="name">Asset Name</Label>
+                  <Label htmlFor="name">
+                    {form.asset_type === 'stock' ? 'Company Name' :
+                     form.asset_type === 'real_estate' ? 'Property Name' : 'Asset Name'}
+                  </Label>
                   <Input
                     id="name"
-                    placeholder="Bitcoin"
+                    placeholder={
+                      form.asset_type === 'stock' ? 'Apple Inc.' :
+                      form.asset_type === 'crypto' ? 'Bitcoin' :
+                      form.asset_type === 'real_estate' ? 'Downtown Apartment' : 'Name'
+                    }
                     value={form.asset_name}
                     onChange={(e) => setForm({ ...form, asset_name: e.target.value })}
                     maxLength={50}
@@ -543,39 +636,72 @@ export default function AddHoldingDialog({ onAdded }: Props) {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="amount">Amount</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="any"
-                  placeholder="0.5"
-                  value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                  required
-                />
+              {form.asset_type === 'stock' && (
+                <div>
+                  <Label htmlFor="exchange">Exchange</Label>
+                  <Select
+                    value={form.exchange}
+                    onValueChange={(value) => setForm({ ...form, exchange: value })}
+                  >
+                    <SelectTrigger id="exchange">
+                      <SelectValue placeholder="Select exchange (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NYSE">New York Stock Exchange (NYSE)</SelectItem>
+                      <SelectItem value="NASDAQ">NASDAQ</SelectItem>
+                      <SelectItem value="LSE">London Stock Exchange</SelectItem>
+                      <SelectItem value="HKEX">Hong Kong Stock Exchange</SelectItem>
+                      <SelectItem value="TSE">Tokyo Stock Exchange</SelectItem>
+                      <SelectItem value="CSE">Cyprus Stock Exchange</SelectItem>
+                      <SelectItem value="OTHER">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="amount">
+                    {form.asset_type === 'stock' ? 'Number of Shares' :
+                     form.asset_type === 'real_estate' ? 'Units' : 'Amount'}
+                  </Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="any"
+                    placeholder={form.asset_type === 'stock' ? '100' : '0.5'}
+                    value={form.amount}
+                    onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                    required
+                  />
+                </div>
+                
+                {(form.asset_type === 'stock' || form.asset_type === 'etf' || form.asset_type === 'real_estate') && (
+                  <div>
+                    <Label htmlFor="purchase_price">Purchase Price (USD)</Label>
+                    <Input
+                      id="purchase_price"
+                      type="number"
+                      step="any"
+                      placeholder="150.00"
+                      value={form.purchase_price}
+                      onChange={(e) => setForm({ ...form, purchase_price: e.target.value })}
+                    />
+                  </div>
+                )}
               </div>
 
-              <div>
-                <Label htmlFor="asset_type">Asset Type</Label>
-                <Select
-                  value={form.asset_type}
-                  onValueChange={(value) => setForm({ ...form, asset_type: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select asset type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="crypto">Cryptocurrency</SelectItem>
-                    <SelectItem value="stock">Stock</SelectItem>
-                    <SelectItem value="bond">Bond</SelectItem>
-                    <SelectItem value="etf">ETF</SelectItem>
-                    <SelectItem value="real_estate">Real Estate</SelectItem>
-                    <SelectItem value="commodity">Commodity</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {(form.asset_type === 'stock' || form.asset_type === 'etf' || form.asset_type === 'real_estate') && (
+                <div>
+                  <Label htmlFor="purchase_date">Purchase Date</Label>
+                  <Input
+                    id="purchase_date"
+                    type="date"
+                    value={form.purchase_date}
+                    onChange={(e) => setForm({ ...form, purchase_date: e.target.value })}
+                  />
+                </div>
+              )}
 
               {fetchingPrice && (
                 <div className="p-3 bg-muted/30 rounded-lg flex items-center gap-2">
