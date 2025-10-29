@@ -31,10 +31,12 @@ import AddHoldingDialog from '@/components/AddHoldingDialog';
 import TaxCalculator from '@/components/TaxCalculator';
 import { SyncLogViewer } from '@/components/SyncLogViewer';
 import TradingPanel from '@/components/TradingPanel';
+import RiskManagementPanel from '@/components/RiskManagementPanel';
 import PerformanceDashboard from '@/components/PerformanceDashboard';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import PortfolioBalanceChart from '@/components/PortfolioBalanceChart';
+import PortfolioInsights from '@/components/PortfolioInsights';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', '#6366f1'];
 
@@ -588,6 +590,13 @@ export default function Portfolio() {
           </div>
         )}
 
+        {/* Portfolio Insights - Financial Analysis */}
+        {holdings.length > 0 && (
+          <div className="mb-6">
+            <PortfolioInsights holdings={holdings} totalValue={totalValue} />
+          </div>
+        )}
+
         {/* Hero Summary Card */}
         {holdings.length > 0 && (
           <Card className="glass-card p-6 md:p-8 border-2 border-primary/20 mb-6">
@@ -725,6 +734,10 @@ export default function Portfolio() {
               <TrendingUp className="w-4 h-4" />
               Trading
             </TabsTrigger>
+            <TabsTrigger value="risk" className="gap-2">
+              <Calculator className="w-4 h-4" />
+              Risk Tools
+            </TabsTrigger>
             <TabsTrigger value="performance" className="gap-2">
               <BarChart3 className="w-4 h-4" />
               Performance
@@ -839,6 +852,11 @@ export default function Portfolio() {
             )}
           </TabsContent>
 
+          {/* Risk Management Tools */}
+          <TabsContent value="risk">
+            <RiskManagementPanel />
+          </TabsContent>
+
           {/* Performance Tab */}
           <TabsContent value="performance">
             <PerformanceDashboard />
@@ -874,13 +892,15 @@ export default function Portfolio() {
                             <Wallet className="w-5 h-5" />
                             <div>
                               <p className="font-semibold">{connection.name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                <Badge variant="outline" className="mr-2">{connection.blockchain}</Badge>
-                                {connection.wallet_address.length > 20 
-                                  ? `${connection.wallet_address.slice(0, 12)}...${connection.wallet_address.slice(-10)}`
-                                  : connection.wallet_address
-                                }
-                              </p>
+                              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                <Badge variant="outline">{connection.blockchain}</Badge>
+                                <span>
+                                  {connection.wallet_address.length > 20 
+                                    ? `${connection.wallet_address.slice(0, 12)}...${connection.wallet_address.slice(-10)}`
+                                    : connection.wallet_address
+                                  }
+                                </span>
+                              </div>
                               {connection.wallet_address.startsWith('xpub') && connection.wallet_address.length < 111 && (
                                 <div className="flex items-center gap-2 mt-2">
                                   <Badge variant="destructive" className="text-xs">

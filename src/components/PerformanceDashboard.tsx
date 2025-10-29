@@ -11,20 +11,39 @@ export default function PerformanceDashboard() {
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [timeframe, setTimeframe] = useState<'all' | '1y' | '1m'>('all');
 
   useEffect(() => {
     loadPerformanceData();
-  }, [user]);
+  }, [user, timeframe]);
 
   const loadPerformanceData = async () => {
     if (!user) return;
 
     try {
-      const { data: trades } = await supabase
+      // Calculate date filter
+      let dateFilter: string | null = null;
+      if (timeframe === '1m') {
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        dateFilter = oneMonthAgo.toISOString();
+      } else if (timeframe === '1y') {
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        dateFilter = oneYearAgo.toISOString();
+      }
+
+      let tradesQuery = supabase
         .from('trades')
         .select('*')
         .eq('user_id', user.id)
         .order('executed_at', { ascending: true });
+
+      if (dateFilter) {
+        tradesQuery = tradesQuery.gte('executed_at', dateFilter);
+      }
+
+      const { data: trades } = await tradesQuery;
 
       const { data: holdings } = await supabase
         .from('portfolio_holdings')
@@ -55,7 +74,16 @@ export default function PerformanceDashboard() {
   };
 
   if (loading || !metrics) {
-    return <Card><CardContent className="p-6">Loading performance metrics...</CardContent></Card>;
+    return (
+      <Card>
+        <CardContent className="p-12 text-center">
+          <div className="animate-pulse space-y-4">
+            <Activity className="w-12 h-12 mx-auto text-muted-foreground opacity-50" />
+            <p className="text-muted-foreground">Analyzing your trading performance...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   const getColorClass = (value: number) => {
@@ -64,8 +92,56 @@ export default function PerformanceDashboard() {
     return 'text-muted-foreground';
   };
 
+  const getPerformanceGrade = () => {
+    if (metrics.sharpeRatio > 2 && metrics.winRate > 60) return { grade: 'A+', color: 'text-green-500', label: 'Exceptional' };
+    if (metrics.sharpeRatio > 1.5 && metrics.winRate > 55) return { grade: 'A', color: 'text-green-500', label: 'Excellent' };
+    if (metrics.sharpeRatio > 1 && metrics.winRate > 50) return { grade: 'B', color: 'text-blue-500', label: 'Good' };
+    if (metrics.sharpeRatio > 0.5 && metrics.winRate > 45) return { grade: 'C', color: 'text-yellow-500', label: 'Average' };
+    return { grade: 'D', color: 'text-red-500', label: 'Needs Improvement' };
+  };
+
+  const performanceGrade = getPerformanceGrade();
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-4">
+      {/* Timeframe Selector */}
+      <Card className="glass-card">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Performance Analysis</h3>
+              <p className="text-sm text-muted-foreground">
+                Overall Grade: <span className={`font-bold ${performanceGrade.color}`}>{performanceGrade.grade}</span> - {performanceGrade.label}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Badge 
+                variant={timeframe === 'all' ? 'default' : 'outline'} 
+                className="cursor-pointer"
+                onClick={() => setTimeframe('all')}
+              >
+                All Time
+              </Badge>
+              <Badge 
+                variant={timeframe === '1y' ? 'default' : 'outline'} 
+                className="cursor-pointer"
+                onClick={() => setTimeframe('1y')}
+              >
+                1 Year
+              </Badge>
+              <Badge 
+                variant={timeframe === '1m' ? 'default' : 'outline'} 
+                className="cursor-pointer"
+                onClick={() => setTimeframe('1m')}
+              >
+                1 Month
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Total Return */}
       <Card className="glass-card">
         <CardHeader className="pb-2">
@@ -207,6 +283,7 @@ export default function PerformanceDashboard() {
           </div>
         </CardContent>
       </Card>
+    </div>
     </div>
   );
 }
