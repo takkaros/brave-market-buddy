@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Settings, TrendingUp, BarChart3, RefreshCw, Plus, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -135,23 +136,33 @@ const Dashboard = () => {
     setSyncing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        toast.error('Not authenticated');
+        return;
+      }
 
-      const { data: connections } = await supabase
+      const { data: connections, error } = await supabase
         .from('portfolio_connections')
         .select('*')
         .eq('user_id', user.id)
         .eq('connection_type', 'exchange');
 
+      if (error) {
+        toast.error('Failed to fetch connections');
+        return;
+      }
+
       if (!connections || connections.length === 0) {
-        toast.error('No exchange connections found');
+        toast.error('No exchange connections found. Add one in Portfolio page.');
         return;
       }
 
       let totalSynced = 0;
+      let totalFailed = 0;
+      
       for (const conn of connections) {
         try {
-          const { data } = await supabase.functions.invoke('sync-exchange-balance', {
+          const { data, error: syncError } = await supabase.functions.invoke('sync-exchange-balance', {
             body: {
               connectionId: conn.id,
               exchangeName: conn.exchange_name,
@@ -160,23 +171,32 @@ const Dashboard = () => {
               apiPassphrase: conn.api_passphrase,
             }
           });
+          
+          if (syncError) throw syncError;
           if (data?.success) totalSynced++;
-        } catch (error) {
+          else totalFailed++;
+        } catch (error: any) {
           console.error(`Failed to sync ${conn.name}:`, error);
+          totalFailed++;
         }
       }
 
-      toast.success(`✅ Synced ${totalSynced} exchange(s)`);
-    } catch (error) {
-      toast.error('Failed to sync exchanges');
+      if (totalSynced > 0) {
+        toast.success(`✅ Synced ${totalSynced} exchange(s)${totalFailed > 0 ? `, ${totalFailed} failed` : ''}`);
+      } else {
+        toast.error('Failed to sync any exchanges');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to sync exchanges');
     } finally {
       setSyncing(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background p-4 md:p-6">
+        <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <Navigation />
@@ -349,6 +369,7 @@ const Dashboard = () => {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   );
 };
 

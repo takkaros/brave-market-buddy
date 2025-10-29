@@ -14,7 +14,7 @@ import { z } from 'zod';
 const holdingSchema = z.object({
   asset_symbol: z.string().min(1, 'Symbol is required').max(10),
   asset_name: z.string().min(1, 'Name is required').max(50),
-  amount: z.string().min(1, 'Amount is required'),
+  amount: z.string().min(1, 'Amount is required').regex(/^\d+(\.\d+)?$/, 'Invalid number format'),
 });
 
 const apiConnectionSchema = z.object({

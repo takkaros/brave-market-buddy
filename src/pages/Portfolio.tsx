@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   Wallet, 
   TrendingUp, 
@@ -31,6 +30,7 @@ import AddHoldingDialog from '@/components/AddHoldingDialog';
 import TaxCalculator from '@/components/TaxCalculator';
 import { SyncLogViewer } from '@/components/SyncLogViewer';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', '#6366f1'];
 
@@ -77,10 +77,6 @@ export default function Portfolio() {
   const [syncing, setSyncing] = useState(false);
   const [syncingWallet, setSyncingWallet] = useState<string | null>(null);
   const [syncLogs, setSyncLogs] = useState<Array<{ timestamp: string; message: string; type: 'success' | 'error' | 'info' }>>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<'value' | 'symbol'>('value');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const itemsPerPage = 20;
 
   const fetchHoldings = async () => {
     if (!user) return;
@@ -477,35 +473,6 @@ export default function Portfolio() {
     .sort((a, b) => (b.value_usd || 0) - (a.value_usd || 0))
     .slice(0, 5);
 
-  // Sort holdings
-  const sortedHoldings = [...holdings].sort((a, b) => {
-    if (sortBy === 'value') {
-      return sortOrder === 'desc' 
-        ? (b.value_usd || 0) - (a.value_usd || 0)
-        : (a.value_usd || 0) - (b.value_usd || 0);
-    } else {
-      return sortOrder === 'desc'
-        ? b.asset_symbol.localeCompare(a.asset_symbol)
-        : a.asset_symbol.localeCompare(b.asset_symbol);
-    }
-  });
-
-  // Paginate holdings
-  const totalPages = Math.ceil(sortedHoldings.length / itemsPerPage);
-  const paginatedHoldings = sortedHoldings.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const handleSort = (column: 'value' | 'symbol') => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(column);
-      setSortOrder('desc');
-    }
-  };
-
   // Prepare chart data
   const chartData = holdings.map(h => ({
     name: h.asset_symbol,
@@ -513,8 +480,9 @@ export default function Portfolio() {
   }));
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
         <Navigation />
 
         {/* Header */}
@@ -703,83 +671,16 @@ export default function Portfolio() {
                     <AddHoldingDialog onAdded={fetchHoldings} />
                   </div>
                 ) : (
-                  <>
-                    {/* Desktop Table View */}
-                    <div className="hidden md:block overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead 
-                              className="cursor-pointer hover:text-foreground"
-                              onClick={() => handleSort('symbol')}
-                            >
-                              Symbol {sortBy === 'symbol' && (sortOrder === 'asc' ? '↑' : '↓')}
-                            </TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                            <TableHead className="text-right">Price</TableHead>
-                            <TableHead 
-                              className="text-right cursor-pointer hover:text-foreground"
-                              onClick={() => handleSort('value')}
-                            >
-                              Value {sortBy === 'value' && (sortOrder === 'asc' ? '↑' : '↓')}
-                            </TableHead>
-                            <TableHead className="text-right">Type</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {paginatedHoldings.map((holding) => (
-                            <HoldingRow
-                              key={holding.id}
-                              holding={holding}
-                              onUpdate={fetchHoldings}
-                              onDelete={deleteHolding}
-                            />
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    {/* Mobile Card View */}
-                    <div className="md:hidden space-y-2">
-                      {paginatedHoldings.map((holding) => (
-                        <HoldingRow
-                          key={holding.id}
-                          holding={holding}
-                          onUpdate={fetchHoldings}
-                          onDelete={deleteHolding}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
-                        <p className="text-sm text-muted-foreground">
-                          Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, sortedHoldings.length)} of {sortedHoldings.length}
-                        </p>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                          >
-                            Previous
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                          >
-                            Next
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </>
+                  <div className="space-y-2">
+                    {holdings.map((holding) => (
+                      <HoldingRow 
+                        key={holding.id} 
+                        holding={holding} 
+                        onDelete={deleteHolding}
+                        onUpdate={fetchHoldings}
+                      />
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -1011,6 +912,7 @@ export default function Portfolio() {
         </Tabs>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
 
