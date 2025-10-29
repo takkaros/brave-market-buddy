@@ -15,10 +15,12 @@ interface Message {
 }
 
 const AI_MODELS = [
-  { value: 'google/gemini-2.5-flash', label: 'Gemini Flash', description: 'Fast & balanced' },
-  { value: 'google/gemini-2.5-pro', label: 'Gemini Pro', description: 'Best reasoning' },
-  { value: 'openai/gpt-5-mini', label: 'GPT-5 Mini', description: 'Efficient' },
-  { value: 'openai/gpt-5', label: 'GPT-5', description: 'Most powerful' },
+  { value: 'google/gemini-2.5-flash-lite', label: '⚡ Gemini Flash Lite', description: 'Cheapest - Best for free tier', isFree: true },
+  { value: 'google/gemini-2.5-flash', label: 'Gemini Flash', description: 'Fast & balanced', isFree: false },
+  { value: 'openai/gpt-5-nano', label: '💨 GPT-5 Nano', description: 'Super fast & cheap', isFree: true },
+  { value: 'openai/gpt-5-mini', label: 'GPT-5 Mini', description: 'Efficient', isFree: false },
+  { value: 'google/gemini-2.5-pro', label: 'Gemini Pro', description: 'Premium reasoning', isFree: false },
+  { value: 'openai/gpt-5', label: 'GPT-5', description: 'Premium power', isFree: false },
 ];
 
 const AIChat = () => {
@@ -27,7 +29,7 @@ const AIChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('google/gemini-2.5-flash');
+  const [selectedModel, setSelectedModel] = useState('google/gemini-2.5-flash-lite');
   const [portfolioStats, setPortfolioStats] = useState<{
     totalValue: number;
     holdingsCount: number;
@@ -159,21 +161,26 @@ const AIChat = () => {
                   Ask me anything about your investments, portfolio allocation, or market conditions
                 </p>
               </div>
-              <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {AI_MODELS.map((model) => (
-                    <SelectItem key={model.value} value={model.value}>
-                      <div className="flex flex-col text-left">
-                        <span className="font-medium text-sm">{model.label}</span>
-                        <span className="text-xs text-muted-foreground">{model.description}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col items-end gap-2">
+                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AI_MODELS.map((model) => (
+                      <SelectItem key={model.value} value={model.value}>
+                        <div className="flex flex-col text-left">
+                          <span className="font-medium text-sm">{model.label}</span>
+                          <span className="text-xs text-muted-foreground">{model.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Free tier included • ⚡💨 = Most economical
+                </p>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0 h-full flex flex-col">
