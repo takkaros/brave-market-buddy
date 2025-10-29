@@ -772,9 +772,25 @@ export default function Portfolio() {
                                 }
                               </p>
                               {connection.wallet_address.startsWith('xpub') && connection.wallet_address.length < 111 && (
-                                <p className="text-xs text-destructive mt-1">
-                                  ⚠️ Address appears truncated - please re-add
-                                </p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Badge variant="destructive" className="text-xs">
+                                    ⚠️ Invalid Address
+                                  </Badge>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      deleteConnection(connection.id, false);
+                                      toast({
+                                        title: 'Connection Deleted',
+                                        description: 'Now add a new connection with the complete xpub address (111 characters)',
+                                      });
+                                    }}
+                                    className="h-6 text-xs"
+                                  >
+                                    Delete & Re-add
+                                  </Button>
+                                </div>
                               )}
                               {connection.last_synced_at && (
                                 <p className="text-xs text-muted-foreground mt-1">
@@ -791,15 +807,17 @@ export default function Portfolio() {
                         </div>
                         
                         <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => syncWallet(connection.id)}
-                            disabled={syncingWallet === connection.id}
-                          >
-                            <RefreshCw className={`w-4 h-4 mr-2 ${syncingWallet === connection.id ? 'animate-spin' : ''}`} />
-                            {syncingWallet === connection.id ? 'Syncing...' : 'Sync'}
-                          </Button>
+                          {!(connection.wallet_address.startsWith('xpub') && connection.wallet_address.length < 111) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => syncWallet(connection.id)}
+                              disabled={syncingWallet === connection.id}
+                            >
+                              <RefreshCw className={`w-4 h-4 mr-2 ${syncingWallet === connection.id ? 'animate-spin' : ''}`} />
+                              {syncingWallet === connection.id ? 'Syncing...' : 'Sync'}
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
