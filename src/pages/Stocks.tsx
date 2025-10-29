@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { generateMockData } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Navigation from '@/components/Navigation';
 import InfoTooltip from '@/components/InfoTooltip';
@@ -10,6 +11,7 @@ import { RefreshCw, TrendingUp, Activity, Globe2 } from 'lucide-react';
 
 const Stocks = () => {
   const [timeframe, setTimeframe] = useState('1M');
+  const [loading, setLoading] = useState(false);
   const mockData = generateMockData('bottom');
   
   // Stock market metrics - US

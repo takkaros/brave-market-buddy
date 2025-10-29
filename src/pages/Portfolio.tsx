@@ -465,24 +465,26 @@ export default function Portfolio() {
   }));
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <Navigation />
 
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Portfolio Powerhouse</h1>
-            <p className="text-muted-foreground">Track all your assets: Crypto, Stocks, Bonds, ETFs, Real Estate & more</p>
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">Portfolio Powerhouse</h1>
+            <p className="text-sm md:text-base text-muted-foreground">Track all your assets: Crypto, Stocks, Bonds, ETFs, Real Estate & more</p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={exportToCSV} variant="outline" size="sm">
+          <div className="flex flex-wrap gap-2 w-full md:w-auto">
+            <Button onClick={exportToCSV} variant="outline" size="sm" className="flex-1 md:flex-none">
               <Download className="w-4 h-4 mr-2" />
-              Export CSV
+              <span className="hidden sm:inline">Export CSV</span>
+              <span className="sm:hidden">Export</span>
             </Button>
-            <Button onClick={syncPrices} variant="outline" size="sm" disabled={syncing}>
+            <Button onClick={syncPrices} variant="outline" size="sm" disabled={syncing} className="flex-1 md:flex-none">
               <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-              Sync Prices
+              <span className="hidden sm:inline">Sync Prices</span>
+              <span className="sm:hidden">Sync</span>
             </Button>
             <AddHoldingDialog onAdded={() => { fetchHoldings(); fetchWalletConnections(); }} />
           </div>
@@ -496,7 +498,7 @@ export default function Portfolio() {
         )}
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -583,11 +585,11 @@ export default function Portfolio() {
                 {loading ? (
                   <div className="text-center py-8 text-muted-foreground">Loading...</div>
                 ) : holdings.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Wallet className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-lg font-semibold mb-2">No Holdings Yet</p>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Add your first holding to start tracking your portfolio
+                  <div className="text-center py-12 bg-muted/30 rounded-lg p-8">
+                    <Wallet className="w-16 h-16 mx-auto text-muted-foreground mb-4 opacity-50" />
+                    <h3 className="text-2xl font-bold mb-2">No Holdings Yet</h3>
+                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                      Get started by adding your first holding or connecting an exchange to automatically sync your crypto portfolio
                     </p>
                     <AddHoldingDialog onAdded={fetchHoldings} />
                   </div>

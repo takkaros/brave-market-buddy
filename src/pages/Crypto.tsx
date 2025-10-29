@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { generateMockData } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import Navigation from '@/components/Navigation';
 import InfoTooltip from '@/components/InfoTooltip';
@@ -313,7 +314,14 @@ const Crypto = () => {
         )}
 
         {/* Price Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-24 w-full" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="glass-card">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center">
@@ -370,9 +378,16 @@ const Crypto = () => {
             </CardContent>
           </Card>
         </div>
+        )}
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {loading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Skeleton className="h-80 w-full" />
+            <Skeleton className="h-80 w-full" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -440,6 +455,7 @@ const Crypto = () => {
             </CardContent>
           </Card>
         </div>
+        )}
 
         {/* AI Analysis */}
         <Card className="glass-card">
