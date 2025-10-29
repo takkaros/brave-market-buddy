@@ -106,9 +106,11 @@ const APIStatusMonitor = () => {
           disabled={loading}
           variant="outline"
           size="sm"
-          className="gap-2"
+          className="gap-2 focus-visible:ring-2 focus-visible:ring-primary"
+          aria-label="Refresh API status"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          {loading && <span className="sr-only">Checking API status</span>}
           Refresh
         </Button>
       </div>

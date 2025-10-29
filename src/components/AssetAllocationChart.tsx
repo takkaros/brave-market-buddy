@@ -66,7 +66,34 @@ const AssetAllocationChart = ({ riskScore }: AssetAllocationChartProps) => {
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'hsl(var(--popover))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '12px',
+                padding: '12px',
+                backdropFilter: 'blur(12px)',
+              }}
+              content={({ active, payload }) => {
+                if (!active || !payload?.[0]) return null;
+                const asset = payload[0];
+                return (
+                  <div className="glass-card p-3">
+                    <p className="font-semibold mb-1">{asset.name}</p>
+                    <p className="text-2xl font-bold" style={{ color: asset.payload.color }}>
+                      {asset.value}%
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {asset.name === 'Stocks' && 'Growth-oriented equities for long-term appreciation'}
+                      {asset.name === 'Bonds' && 'Fixed income for stability and income'}
+                      {asset.name === 'Cash' && 'Liquidity and capital preservation'}
+                      {asset.name === 'Crypto' && 'High-risk, high-reward digital assets'}
+                      {asset.name === 'Gold' && 'Inflation hedge and safe haven asset'}
+                    </p>
+                  </div>
+                );
+              }}
+            />
           </PieChart>
         </ResponsiveContainer>
 

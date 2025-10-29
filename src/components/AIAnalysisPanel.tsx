@@ -107,6 +107,7 @@ Rally Probability: 65% (12-month horizon)`;
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="sr-only">Analyzing market data</span>
                   Analyzing...
                 </>
               ) : (
@@ -135,6 +136,7 @@ Rally Probability: 65% (12-month horizon)`;
         {loading && (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <span className="sr-only">Analyzing market conditions</span>
           </div>
         )}
         

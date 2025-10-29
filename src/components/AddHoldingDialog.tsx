@@ -551,6 +551,7 @@ export default function AddHoldingDialog({ onAdded }: Props) {
               {fetchingPrice && (
                 <div className="p-3 bg-muted/30 rounded-lg flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="sr-only">Loading price data</span>
                   <p className="text-sm">Fetching current price...</p>
                 </div>
               )}
@@ -587,6 +588,7 @@ export default function AddHoldingDialog({ onAdded }: Props) {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <span className="sr-only">Adding holding</span>
                     Adding...
                   </>
                 ) : (
@@ -716,6 +718,7 @@ export default function AddHoldingDialog({ onAdded }: Props) {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <span className="sr-only">Connecting to exchange</span>
                     Connecting...
                   </>
                 ) : (
@@ -777,6 +780,7 @@ export default function AddHoldingDialog({ onAdded }: Props) {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <span className="sr-only">Adding wallet connection</span>
                     Adding...
                   </>
                 ) : (

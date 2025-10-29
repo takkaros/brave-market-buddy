@@ -231,6 +231,7 @@ const AIChat = () => {
                     <div className="flex justify-start">
                       <div className="glass-card rounded-lg p-4">
                         <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                        <span className="sr-only">AI is thinking</span>
                       </div>
                     </div>
                   )}

@@ -10,6 +10,7 @@ export const ProtectedRoute = ({ children }: { children: ReactNode }) => {
     return (
       <div className="min-h-screen dashboard-gradient flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="sr-only">Loading application</span>
       </div>
     );
   }

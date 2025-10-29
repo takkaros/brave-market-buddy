@@ -11,7 +11,7 @@ All colors MUST be HSL.
     --background: 210 30% 8%;
     --foreground: 210 20% 98%;
 
-    --card: 210 25% 12%;
+    --card: 210 25% 14%;
     --card-foreground: 210 20% 98%;
 
     --popover: 210 30% 10%;
@@ -24,7 +24,7 @@ All colors MUST be HSL.
     --secondary-foreground: 210 20% 98%;
 
     --muted: 210 25% 18%;
-    --muted-foreground: 210 15% 60%;
+    --muted-foreground: 210 15% 65%;
 
     --accent: 217 91% 60%;
     --accent-foreground: 210 20% 98%;
@@ -32,8 +32,8 @@ All colors MUST be HSL.
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 20% 98%;
 
-    --border: 210 20% 20%;
-    --input: 210 20% 20%;
+    --border: 210 20% 25%;
+    --input: 210 20% 25%;
     --ring: 217 91% 60%;
 
     --radius: 0.75rem;
@@ -70,7 +70,7 @@ All colors MUST be HSL.
   .dark {
     --background: 210 30% 8%;
     --foreground: 210 20% 98%;
-    --card: 210 25% 12%;
+    --card: 210 25% 14%;
     --card-foreground: 210 20% 98%;
     --popover: 210 30% 10%;
     --popover-foreground: 210 20% 98%;
@@ -79,13 +79,13 @@ All colors MUST be HSL.
     --secondary: 210 25% 16%;
     --secondary-foreground: 210 20% 98%;
     --muted: 210 25% 18%;
-    --muted-foreground: 210 15% 60%;
+    --muted-foreground: 210 15% 65%;
     --accent: 217 91% 60%;
     --accent-foreground: 210 20% 98%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 20% 98%;
-    --border: 210 20% 20%;
-    --input: 210 20% 20%;
+    --border: 210 20% 25%;
+    --input: 210 20% 25%;
     --ring: 217 91% 60%;
     --sidebar-background: 210 30% 8%;
     --sidebar-foreground: 210 20% 98%;
@@ -116,8 +116,13 @@ All colors MUST be HSL.
 @layer utilities {
   .glass-card {
     background: hsl(var(--card) / 0.7);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
     border: 1px solid hsl(var(--border) / 0.3);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    box-shadow: 0 8px 32px hsl(var(--primary) / 0.1);
   }
 
   .text-gradient {

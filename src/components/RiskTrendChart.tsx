@@ -35,7 +35,39 @@ const RiskTrendChart = ({ data }: RiskTrendChartProps) => {
               contentStyle={{
                 backgroundColor: 'hsl(var(--popover))',
                 border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
+                borderRadius: '12px',
+                padding: '12px',
+                backdropFilter: 'blur(12px)',
+              }}
+              content={({ active, payload }) => {
+                if (!active || !payload?.[0]) return null;
+                const score = payload[0].value as number;
+                const getRiskLevel = (s: number) => {
+                  if (s < 30) return { level: 'LOW', color: 'hsl(var(--risk-safe))' };
+                  if (s < 50) return { level: 'MODERATE', color: 'hsl(var(--risk-moderate))' };
+                  if (s < 70) return { level: 'ELEVATED', color: 'hsl(var(--risk-elevated))' };
+                  return { level: 'HIGH', color: 'hsl(var(--risk-high))' };
+                };
+                const risk = getRiskLevel(score);
+                return (
+                  <div className="glass-card p-3">
+                    <p className="font-semibold text-xs text-muted-foreground mb-1">
+                      {payload[0].payload.date}
+                    </p>
+                    <p className="text-2xl font-bold" style={{ color: risk.color }}>
+                      {score.toFixed(1)}
+                    </p>
+                    <p className="text-xs font-medium mt-1" style={{ color: risk.color }}>
+                      {risk.level} RISK
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {score < 30 && 'Market conditions favorable for growth'}
+                      {score >= 30 && score < 50 && 'Balanced risk-reward environment'}
+                      {score >= 50 && score < 70 && 'Elevated risk - consider defensive positioning'}
+                      {score >= 70 && 'High risk - prioritize capital preservation'}
+                    </p>
+                  </div>
+                );
               }}
             />
             <ReferenceLine y={30} stroke="hsl(var(--risk-safe))" strokeDasharray="3 3" />

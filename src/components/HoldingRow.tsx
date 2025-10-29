@@ -109,7 +109,8 @@ export function HoldingRow({ holding, onDelete, onUpdate }: {
             variant="ghost"
             size="icon"
             onClick={() => setIsEditingNotes(!isEditingNotes)}
-            className="text-primary hover:text-primary"
+            className="text-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label="Edit notes"
           >
             <Edit2 className="w-4 h-4" />
           </Button>
@@ -117,7 +118,8 @@ export function HoldingRow({ holding, onDelete, onUpdate }: {
             variant="ghost"
             size="icon"
             onClick={() => onDelete(holding.id)}
-            className="text-destructive hover:text-destructive"
+            className="text-destructive hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive"
+            aria-label="Delete holding"
           >
             <Trash2 className="w-4 h-4" />
           </Button>
