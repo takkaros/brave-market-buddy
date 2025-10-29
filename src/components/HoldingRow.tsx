@@ -19,15 +19,17 @@ interface Holding {
   purchase_price_usd?: number;
   purchase_date?: string;
   notes?: string;
+  connection_id?: string | null;
 }
 
 interface HoldingRowProps {
   holding: Holding;
   onUpdate?: () => void;
   onDelete: (id: string) => void;
+  connectionLabel?: string;
 }
 
-const HoldingRow = ({ holding, onUpdate, onDelete }: HoldingRowProps) => {
+const HoldingRow = ({ holding, onUpdate, onDelete, connectionLabel }: HoldingRowProps) => {
   const [editingNotes, setEditingNotes] = useState(false);
   const [editingAmount, setEditingAmount] = useState(false);
   const [notes, setNotes] = useState(holding.notes || '');
@@ -154,6 +156,11 @@ const HoldingRow = ({ holding, onUpdate, onDelete }: HoldingRowProps) => {
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-bold text-lg">{holding.asset_symbol}</h3>
             <Badge variant="outline" className="text-xs">{holding.asset_type}</Badge>
+            {connectionLabel && (
+              <Badge variant="secondary" className="text-xs">
+                {connectionLabel}
+              </Badge>
+            )}
           </div>
           {holding.asset_name && (
             <p className="text-sm text-muted-foreground">{holding.asset_name}</p>

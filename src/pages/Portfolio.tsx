@@ -46,6 +46,7 @@ export interface Holding {
   purchase_price_usd?: number;
   purchase_date?: string;
   notes?: string;
+  connection_id?: string | null;
 }
 
 interface WalletConnection {
@@ -77,6 +78,19 @@ export default function Portfolio() {
   const [syncing, setSyncing] = useState(false);
   const [syncingWallet, setSyncingWallet] = useState<string | null>(null);
   const [syncLogs, setSyncLogs] = useState<Array<{ timestamp: string; message: string; type: 'success' | 'error' | 'info' }>>([]);
+
+  // Helper function to get connection label for a holding
+  const getConnectionLabel = (connectionId: string | null | undefined): string => {
+    if (!connectionId) return 'Manual';
+    
+    const wallet = walletConnections.find(w => w.id === connectionId);
+    if (wallet) return wallet.name;
+    
+    const exchange = exchangeConnections.find(e => e.id === connectionId);
+    if (exchange) return exchange.name;
+    
+    return 'Unknown';
+  };
 
   const fetchHoldings = async () => {
     if (!user) return;
@@ -678,6 +692,7 @@ export default function Portfolio() {
                         holding={holding} 
                         onDelete={deleteHolding}
                         onUpdate={fetchHoldings}
+                        connectionLabel={getConnectionLabel(holding.connection_id)}
                       />
                     ))}
                   </div>
@@ -695,6 +710,7 @@ export default function Portfolio() {
               onDelete={deleteHolding}
               onAdded={fetchHoldings}
               onUpdate={fetchHoldings}
+              getConnectionLabel={getConnectionLabel}
             />
           </TabsContent>
 
@@ -949,7 +965,8 @@ function AggregatedAssetTypeContent({
   loading, 
   onDelete, 
   onAdded,
-  onUpdate
+  onUpdate,
+  getConnectionLabel
 }: { 
   holdings: Holding[]; 
   type: string; 
@@ -957,6 +974,7 @@ function AggregatedAssetTypeContent({
   onDelete: (id: string) => void;
   onAdded: () => void;
   onUpdate: () => void;
+  getConnectionLabel: (connectionId: string | null | undefined) => string;
 }) {
   // Aggregate holdings by asset_symbol
   const aggregatedHoldings = holdings.reduce((acc, holding) => {
@@ -1063,6 +1081,7 @@ function AggregatedAssetTypeContent({
                       holding={holding} 
                       onDelete={onDelete}
                       onUpdate={onUpdate}
+                      connectionLabel={getConnectionLabel(holding.connection_id)}
                     />
                   ))}
                 </div>
