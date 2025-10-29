@@ -16,8 +16,6 @@ interface HealthStatus {
   fred: APIStatus;
   alphaVantage: APIStatus;
   cryptoCompare: APIStatus;
-  quandl: APIStatus;
-  nasdaq: APIStatus;
   openai: APIStatus;
 }
 
@@ -87,8 +85,6 @@ const APIStatusMonitor = () => {
     fred: 'FRED (Economic Data)',
     alphaVantage: 'Alpha Vantage (Stocks)',
     cryptoCompare: 'CryptoCompare (Crypto)',
-    quandl: 'Quandl (Financial Data)',
-    nasdaq: 'Nasdaq Data Link',
     openai: 'OpenAI (AI Chat)',
   };
 

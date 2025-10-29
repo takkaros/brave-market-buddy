@@ -14,16 +14,12 @@ serve(async (req) => {
     const FRED_KEY = Deno.env.get('FRED_API_KEY');
     const ALPHA_VANTAGE_KEY = Deno.env.get('ALPHA_VANTAGE_API_KEY');
     const CRYPTOCOMPARE_KEY = Deno.env.get('CRYPTOCOMPARE_API_KEY');
-    const QUANDL_KEY = Deno.env.get('QUANDL_API_KEY');
-    const NASDAQ_KEY = Deno.env.get('NASDAQ_API_KEY');
     const OPENAI_KEY = Deno.env.get('OPENAI_API_KEY');
 
     const healthStatus = {
       fred: { status: 'unknown' as string, configured: !!FRED_KEY, error: undefined as string | undefined },
       alphaVantage: { status: 'unknown' as string, configured: !!ALPHA_VANTAGE_KEY, error: undefined as string | undefined },
       cryptoCompare: { status: 'unknown' as string, configured: !!CRYPTOCOMPARE_KEY, error: undefined as string | undefined },
-      quandl: { status: 'unknown' as string, configured: !!QUANDL_KEY, error: undefined as string | undefined },
-      nasdaq: { status: 'unknown' as string, configured: !!NASDAQ_KEY, error: undefined as string | undefined },
       openai: { status: 'unknown' as string, configured: !!OPENAI_KEY, error: undefined as string | undefined },
     };
 
@@ -83,42 +79,6 @@ serve(async (req) => {
       } catch (error) {
         healthStatus.cryptoCompare.status = 'error';
         healthStatus.cryptoCompare.error = error instanceof Error ? error.message : 'Connection failed';
-      }
-    }
-
-    // Test Quandl API
-    if (QUANDL_KEY) {
-      try {
-        const quandlResponse = await fetch(
-          `https://data.nasdaq.com/api/v3/datasets/WIKI/AAPL.json?api_key=${QUANDL_KEY}&limit=1`,
-          { signal: AbortSignal.timeout(5000) }
-        );
-        healthStatus.quandl.status = quandlResponse.ok ? 'connected' : 'error';
-        if (!quandlResponse.ok) {
-          const errorData = await quandlResponse.json();
-          healthStatus.quandl.error = errorData.quandl_error?.message || 'API error';
-        }
-      } catch (error) {
-        healthStatus.quandl.status = 'error';
-        healthStatus.quandl.error = error instanceof Error ? error.message : 'Connection failed';
-      }
-    }
-
-    // Test Nasdaq Data Link (formerly Quandl) with Nasdaq key
-    if (NASDAQ_KEY) {
-      try {
-        const nasdaqResponse = await fetch(
-          `https://data.nasdaq.com/api/v3/datasets/WIKI/AAPL.json?api_key=${NASDAQ_KEY}&limit=1`,
-          { signal: AbortSignal.timeout(5000) }
-        );
-        healthStatus.nasdaq.status = nasdaqResponse.ok ? 'connected' : 'error';
-        if (!nasdaqResponse.ok) {
-          const errorData = await nasdaqResponse.json();
-          healthStatus.nasdaq.error = errorData.quandl_error?.message || 'API error';
-        }
-      } catch (error) {
-        healthStatus.nasdaq.status = 'error';
-        healthStatus.nasdaq.error = error instanceof Error ? error.message : 'Connection failed';
       }
     }
 
