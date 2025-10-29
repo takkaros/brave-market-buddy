@@ -117,15 +117,36 @@ const Crypto = () => {
   const fetchCryptoData = async () => {
     setLoading(true);
     try {
-      // Fetch holdings
+      // Fetch holdings and aggregate duplicates
       const { data: holdingsData, error: holdingsError } = await supabase
         .from('portfolio_holdings')
         .select('*')
-        .in('asset_symbol', ['BTC', 'ETH', 'USDT', 'USDC', 'BNB', 'XRP', 'ADA', 'SOL', 'DOGE', 'DOT'])
-        .order('value_usd', { ascending: false });
+        .in('asset_symbol', ['BTC', 'ETH', 'USDT', 'USDC', 'BNB', 'XRP', 'ADA', 'SOL', 'DOGE', 'DOT']);
 
       if (!holdingsError && holdingsData) {
-        setCryptoHoldings(holdingsData);
+        // Aggregate holdings by symbol to prevent duplicates
+        const aggregatedHoldings = holdingsData.reduce((acc: any[], holding: any) => {
+          const existingIndex = acc.findIndex(h => h.asset_symbol === holding.asset_symbol);
+          
+          if (existingIndex >= 0) {
+            // Aggregate amounts and values
+            acc[existingIndex].amount = Number(acc[existingIndex].amount) + Number(holding.amount);
+            acc[existingIndex].value_usd = Number(acc[existingIndex].value_usd || 0) + Number(holding.value_usd || 0);
+            // Keep the most recent price
+            if (new Date(holding.last_updated_at) > new Date(acc[existingIndex].last_updated_at)) {
+              acc[existingIndex].price_usd = holding.price_usd;
+              acc[existingIndex].last_updated_at = holding.last_updated_at;
+            }
+          } else {
+            acc.push({ ...holding });
+          }
+          
+          return acc;
+        }, []);
+        
+        // Sort by value descending
+        aggregatedHoldings.sort((a, b) => (b.value_usd || 0) - (a.value_usd || 0));
+        setCryptoHoldings(aggregatedHoldings);
       }
 
       const { data: btcData, error: btcError } = await supabase.functions.invoke('fetch-crypto-data', {
