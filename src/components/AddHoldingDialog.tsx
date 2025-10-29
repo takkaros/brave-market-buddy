@@ -33,7 +33,6 @@ const apiConnectionSchema = z.object({
   api_passphrase: z.string()
     .trim()
     .max(100, 'Passphrase too long')
-    .regex(/^[A-Za-z0-9_-]*$/, 'Passphrase contains invalid characters')
     .optional()
     .or(z.literal('')),
 });
