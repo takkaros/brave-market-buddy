@@ -20,6 +20,7 @@ import {
   Coins,
   Home,
   Calculator,
+  BarChart3,
   Link as LinkIcon
 } from 'lucide-react';
 import { HoldingRow } from '@/components/HoldingRow';
@@ -29,6 +30,8 @@ import { useAuth } from '@/hooks/useAuth';
 import AddHoldingDialog from '@/components/AddHoldingDialog';
 import TaxCalculator from '@/components/TaxCalculator';
 import { SyncLogViewer } from '@/components/SyncLogViewer';
+import TradingPanel from '@/components/TradingPanel';
+import PerformanceDashboard from '@/components/PerformanceDashboard';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
@@ -473,9 +476,14 @@ export default function Portfolio() {
     };
   }, [user]);
 
+  // Calculate real P&L based on purchase prices
   const totalValue = holdings.reduce((sum, h) => sum + (Number(h.value_usd) || 0), 0);
-  const dayChange = holdings.reduce((sum, h) => sum + ((h.value_usd || 0) * 0.02), 0); // Mock 2% change
-  const dayChangePercent = totalValue > 0 ? (dayChange / totalValue) * 100 : 0;
+  const totalCost = holdings.reduce((sum, h) => {
+    const cost = (h.purchase_price_usd || h.price_usd) * h.amount;
+    return sum + cost;
+  }, 0);
+  const dayChange = totalValue - totalCost;
+  const dayChangePercent = totalCost > 0 ? (dayChange / totalCost) * 100 : 0;
 
   // Filter holdings based on hideSmallBalances toggle
   const filteredHoldings = hideSmallBalances 
@@ -674,6 +682,14 @@ export default function Portfolio() {
               <Calculator className="w-4 h-4" />
               Tax Helper
             </TabsTrigger>
+            <TabsTrigger value="trading" className="gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Trading
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Performance
+            </TabsTrigger>
             <TabsTrigger value="connections" className="gap-2">
               <LinkIcon className="w-4 h-4" />
               Connections
@@ -765,6 +781,30 @@ export default function Portfolio() {
               onUpdate={fetchHoldings}
               getConnectionLabel={getConnectionLabel}
             />
+          </TabsContent>
+
+          {/* Trading Tab */}
+          <TabsContent value="trading">
+            <Card>
+              <CardHeader>
+                <CardTitle>Trading Panel</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Place orders from individual asset pages or use the trading interface.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Performance Tab */}
+          <TabsContent value="performance">
+            <Card>
+              <CardHeader>
+                <CardTitle>Performance Metrics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">View comprehensive performance analytics once you have trading history.</p>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Tax Helper */}

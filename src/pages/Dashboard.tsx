@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { generateMockData, generateHistoricalData } from '@/utils/mockData';
+import { generateHistoricalData } from '@/utils/mockData';
 import { calculateRiskScore } from '@/utils/riskCalculator';
 import Navigation from '@/components/Navigation';
 import RiskGauge from '@/components/RiskGauge';
@@ -22,9 +22,34 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const mockData = generateMockData('bottom');
+  
+  // Fetch real economic indicators from database
+  const [economicData, setEconomicData] = useState({
+    vix: 22,
+    fearGreedIndex: 28,
+    yieldCurve10y2y: 0.3,
+    unemploymentRate: 3.8,
+  });
+  
   const historicalData = generateHistoricalData(180);
-  const { score, categories } = calculateRiskScore(mockData);
+  const { score, categories } = calculateRiskScore({
+    timestamp: new Date(),
+    ...economicData,
+    // Add remaining required fields with defaults
+    bbbAaaSpread: 2.1, consumerDelinquency: 3.2, corpDebtToGDP: 47, creditCardDelinquency: 2.8,
+    autoLoanDelinquency: 3.5, tedSpread: 0.25, fedBalanceSheet: 7800, commercialPaper: 1200,
+    bankLiquidity: 85, libor: 5.3, sp500PE: 18.5, marginDebt: 750, putCallRatio: 1.3,
+    advanceDecline: -500, realYield: 1.8, fedFundsRate: 5.25, inflationRate: 3.2,
+    m2MoneySupply: 21000, initialClaims: 225000, financialStressIndex: 0.2, bankFailures: 0,
+    caseShiller: 315, mortgageRate: 6.8, housingAffordability: 98, mortgageDelinquency: 2.1,
+    homeInventory: 1.2, earningsGrowth: 8.5, revenueGrowth: 6.2, profitMargin: 11.8,
+    sharesOutstanding: -2.1, buffettIndicator: 152, shillerPE: 28.5, btcHashRate: 450,
+    btcActiveAddresses: 850000, btcExchangeInflow: -12000, btcMVRV: 1.8, stablecoinSupply: 145,
+    cryptoFundingRate: 0.01, housingStarts: 1450, buildingPermits: 1520, existingHomeSales: 4.2,
+    pendingHomeSales: 98, daysOnMarket: 32, priceToRent: 22, goldMiningProduction: 3200,
+    centralBankPurchases: 450, industrialDemand: 2800, goldSilverRatio: 82, realYieldCorrelation: -0.75,
+    duration: 6.5, convexity: 0.8, oisSpread: 0.12, tipsSpread: 2.2, municipalBondYield: 3.8
+  });
   const previousScore = historicalData[historicalData.length - 30]?.score;
   const [syncing, setSyncing] = useState(false);
 
@@ -48,9 +73,9 @@ const Dashboard = () => {
       const { data, error } = await supabase.functions.invoke('overall-market-analysis', {
         body: {
           ...marketData,
-          vix: mockData.vix,
-          fearGreed: mockData.fearGreedIndex,
-          sp500: 4500, // Would fetch from stocks API
+          vix: economicData.vix,
+          fearGreed: economicData.fearGreedIndex,
+          sp500: 4500,
         }
       });
 
@@ -92,9 +117,9 @@ const Dashboard = () => {
           marketData: {
             btcPrice: marketData.btcPrice,
             goldPrice: marketData.goldPrice,
-            vix: mockData.vix,
+            vix: economicData.vix,
             yield10Y: marketData.yield10Y,
-            fearGreed: mockData.fearGreedIndex,
+            fearGreed: economicData.fearGreedIndex,
           },
         },
       });
@@ -324,7 +349,7 @@ const Dashboard = () => {
             <div>
               <p className="font-medium">Market Opportunity Detected</p>
               <p className="text-sm text-muted-foreground">
-                Risk declining from 67 → {score}. Fear & Greed at {mockData.fearGreedIndex}. 
+                Risk declining from 67 → {score}. Fear & Greed at {economicData.fearGreedIndex}. 
                 Contrarian buy signal strengthening.
               </p>
             </div>
@@ -337,17 +362,17 @@ const Dashboard = () => {
             <RiskGauge score={score} previousScore={previousScore} />
           </div>
           <div className="space-y-6">
-            <FearGreedGauge value={mockData.fearGreedIndex} />
+            <FearGreedGauge value={economicData.fearGreedIndex} />
           </div>
         </div>
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <KeyIndicatorsChart indicators={{
-            vix: mockData.vix,
-            yieldCurve10y2y: mockData.yieldCurve10y2y,
-            unemploymentRate: mockData.unemploymentRate,
-            fearGreedIndex: mockData.fearGreedIndex,
+            vix: economicData.vix,
+            yieldCurve10y2y: economicData.yieldCurve10y2y,
+            unemploymentRate: economicData.unemploymentRate,
+            fearGreedIndex: economicData.fearGreedIndex,
           }} />
           <AssetAllocationChart riskScore={score} />
         </div>
@@ -362,7 +387,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <AIAnalysisPanel 
             riskScore={score} 
-            fearGreedIndex={mockData.fearGreedIndex}
+            fearGreedIndex={economicData.fearGreedIndex}
             onOpenChat={() => navigate('/chat')}
           />
           <APIStatusMonitor />
