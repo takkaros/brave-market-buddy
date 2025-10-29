@@ -54,11 +54,10 @@ const Dashboard = () => {
         }
       });
 
-      if (error) throw error;
-
+      // Check for specific error types in data before throwing
       if (data?.error === 'PAYMENT_REQUIRED') {
         toast.error('💳 AI Credits Exhausted', {
-          description: 'Please add Lovable AI credits in Settings → Workspace → Usage to continue using AI features.',
+          description: 'Please add Lovable AI credits to continue using AI features.',
           duration: 10000,
         });
         return;
@@ -71,6 +70,8 @@ const Dashboard = () => {
         });
         return;
       }
+
+      if (error) throw error;
 
       if (data?.success && data.analysis) {
         setOverallAnalysis(data.analysis);
@@ -98,11 +99,10 @@ const Dashboard = () => {
         },
       });
 
-      if (forecastError) throw forecastError;
-
+      // Check for specific error types in data before throwing
       if (forecastData?.error === 'PAYMENT_REQUIRED') {
         toast.error('💳 AI Credits Exhausted', {
-          description: 'Please add Lovable AI credits in Settings → Workspace → Usage to continue using AI features.',
+          description: 'Please add Lovable AI credits to continue using AI features.',
           duration: 10000,
         });
         return;
@@ -115,6 +115,8 @@ const Dashboard = () => {
         });
         return;
       }
+
+      if (forecastError) throw forecastError;
 
       if (!forecastData.success) throw new Error(forecastData.error);
 
