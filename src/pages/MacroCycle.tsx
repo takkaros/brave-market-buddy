@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,15 +8,46 @@ import { LogRegChart } from '@/components/LogRegChart';
 import { RiskHeatmap } from '@/components/RiskHeatmap';
 import { CycleTimeline } from '@/components/CycleTimeline';
 import { TrendBandChart } from '@/components/TrendBandChart';
-import { useTheme } from 'next-themes';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import Navigation from '@/components/Navigation';
 
 export default function MacroCycle() {
   const [selectedAsset, setSelectedAsset] = useState('BTC');
   const [lastUpdate, setLastUpdate] = useState(new Date().toLocaleString());
-  const { theme, setTheme } = useTheme();
+  const [btcData, setBtcData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const fetchBTCData = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-btc-macro-data');
+      if (error) throw error;
+      setBtcData(data);
+      setLastUpdate(new Date().toLocaleString());
+      toast({
+        title: 'Data Updated',
+        description: 'Latest macro data fetched successfully',
+      });
+    } catch (error: any) {
+      console.error('Error fetching BTC data:', error);
+      toast({
+        title: 'Update Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBTCData();
+  }, [selectedAsset]);
 
   const handleRefresh = () => {
-    setLastUpdate(new Date().toLocaleString());
+    fetchBTCData();
   };
 
   const handleDownload = () => {
@@ -30,6 +61,7 @@ export default function MacroCycle() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navigation />
       {/* Hero Section */}
       <header className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border-b border-border">
         <div className="container mx-auto px-4 py-12">
@@ -61,15 +93,12 @@ export default function MacroCycle() {
                 <SelectItem value="TOTAL2">Alt Market</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-              {theme === 'dark' ? '☀️' : '🌙'} Theme
-            </Button>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">Last update: {lastUpdate}</span>
-            <Button variant="outline" size="sm" onClick={handleRefresh}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? 'Updating...' : 'Refresh'}
             </Button>
             <Button variant="outline" size="sm" onClick={handleDownload}>
               <Download className="h-4 w-4 mr-2" />
@@ -82,7 +111,7 @@ export default function MacroCycle() {
       {/* Main Content */}
       <div id="macro-cycle-content" className="container mx-auto px-4 pb-12 space-y-8">
         {/* Key Metrics Dashboard */}
-        <MacroCycleMetrics asset={selectedAsset} />
+        <MacroCycleMetrics asset={selectedAsset} btcData={btcData} />
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

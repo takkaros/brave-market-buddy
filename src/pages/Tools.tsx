@@ -3,7 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CSVImport from '@/components/CSVImport';
 import FIRECalculator from '@/components/FIRECalculator';
 import TaxCalculator from '@/components/TaxCalculator';
-import { Calculator, Upload, Flame } from 'lucide-react';
+import DCACalculator from '@/components/DCACalculator';
+import RebalanceCalculator from '@/components/RebalanceCalculator';
+import { Calculator, Upload, Flame, TrendingUp, Scale } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Tools() {
@@ -21,7 +23,7 @@ export default function Tools() {
         </div>
 
         <Tabs defaultValue="fire" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
             <TabsTrigger value="fire" className="gap-2">
               <Flame className="w-4 h-4" />
               FIRE
@@ -29,6 +31,14 @@ export default function Tools() {
             <TabsTrigger value="csv" className="gap-2">
               <Upload className="w-4 h-4" />
               Import
+            </TabsTrigger>
+            <TabsTrigger value="dca" className="gap-2">
+              <TrendingUp className="w-4 h-4" />
+              DCA
+            </TabsTrigger>
+            <TabsTrigger value="rebalance" className="gap-2">
+              <Scale className="w-4 h-4" />
+              Rebalance
             </TabsTrigger>
             <TabsTrigger value="tax" className="gap-2">
               <Calculator className="w-4 h-4" />
@@ -49,6 +59,14 @@ export default function Tools() {
                 });
               }}
             />
+          </TabsContent>
+
+          <TabsContent value="dca" className="space-y-4">
+            <DCACalculator />
+          </TabsContent>
+
+          <TabsContent value="rebalance" className="space-y-4">
+            <RebalanceCalculator />
           </TabsContent>
 
           <TabsContent value="tax" className="space-y-4">

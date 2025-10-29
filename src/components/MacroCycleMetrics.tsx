@@ -4,16 +4,16 @@ import { calculateLogRegFairValue, calculateRiskMetric, getCycleProgress, getPha
 
 interface MacroCycleMetricsProps {
   asset: string;
+  btcData?: any;
 }
 
-export function MacroCycleMetrics({ asset }: MacroCycleMetricsProps) {
-  // Mock data - in production, fetch from API
-  const currentPrice = asset === 'BTC' ? 95000 : 3500;
+export function MacroCycleMetrics({ asset, btcData }: MacroCycleMetricsProps) {
+  const currentPrice = btcData?.price || (asset === 'BTC' ? 95000 : 3500);
   const fairValue = calculateLogRegFairValue(asset);
   const riskScore = calculateRiskMetric(asset, currentPrice);
   const cycleProgress = getCycleProgress();
   const phase = getPhaseStatus(riskScore, cycleProgress.percentComplete);
-  const btcDominance = 54.2;
+  const btcDominance = btcData?.dominance || 54.2;
   const above200WMA = true;
   const aboveBullSupport = true;
 
