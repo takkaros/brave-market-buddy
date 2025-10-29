@@ -78,6 +78,7 @@ export default function Portfolio() {
   const [syncing, setSyncing] = useState(false);
   const [syncingWallet, setSyncingWallet] = useState<string | null>(null);
   const [syncLogs, setSyncLogs] = useState<Array<{ timestamp: string; message: string; type: 'success' | 'error' | 'info' }>>([]);
+  const [hideSmallBalances, setHideSmallBalances] = useState(false);
 
   // Helper function to get connection label for a holding
   const getConnectionLabel = (connectionId: string | null | undefined): string => {
@@ -476,6 +477,11 @@ export default function Portfolio() {
   const dayChange = holdings.reduce((sum, h) => sum + ((h.value_usd || 0) * 0.02), 0); // Mock 2% change
   const dayChangePercent = totalValue > 0 ? (dayChange / totalValue) * 100 : 0;
 
+  // Filter holdings based on hideSmallBalances toggle
+  const filteredHoldings = hideSmallBalances 
+    ? holdings.filter(h => (h.value_usd || 0) > 1)
+    : holdings;
+
   // Calculate asset allocation
   const assetAllocation = holdings.reduce((acc, h) => {
     const type = h.asset_type || 'other';
@@ -506,6 +512,14 @@ export default function Portfolio() {
             <p className="text-sm md:text-base text-muted-foreground">Track all your assets: Crypto, Stocks, Bonds, ETFs, Real Estate & more</p>
           </div>
           <div className="flex flex-wrap gap-2 w-full md:w-auto">
+            <Button 
+              onClick={() => setHideSmallBalances(!hideSmallBalances)} 
+              variant={hideSmallBalances ? "default" : "outline"} 
+              size="sm" 
+              className="flex-1 md:flex-none"
+            >
+              {hideSmallBalances ? "Show All" : "Hide <$1"}
+            </Button>
             <Button onClick={exportToCSV} variant="outline" size="sm" className="flex-1 md:flex-none">
               <Download className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Export CSV</span>
@@ -686,7 +700,7 @@ export default function Portfolio() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {holdings.map((holding) => (
+                    {filteredHoldings.map((holding) => (
                       <HoldingRow 
                         key={holding.id} 
                         holding={holding} 
@@ -704,7 +718,7 @@ export default function Portfolio() {
           {/* Crypto Tab - Aggregated View */}
           <TabsContent value="crypto">
             <AggregatedAssetTypeContent 
-              holdings={holdings.filter(h => h.asset_type === 'crypto')} 
+              holdings={filteredHoldings.filter(h => h.asset_type === 'crypto')} 
               type="Crypto"
               loading={loading}
               onDelete={deleteHolding}
@@ -717,36 +731,39 @@ export default function Portfolio() {
           {/* Stocks Tab */}
           <TabsContent value="stocks">
             <AssetTypeContent 
-              holdings={holdings.filter(h => h.asset_type === 'stock')} 
+              holdings={filteredHoldings.filter(h => h.asset_type === 'stock')} 
               type="Stocks"
               loading={loading}
               onDelete={deleteHolding}
               onAdded={fetchHoldings}
               onUpdate={fetchHoldings}
+              getConnectionLabel={getConnectionLabel}
             />
           </TabsContent>
 
           {/* Bonds Tab */}
           <TabsContent value="bonds">
             <AssetTypeContent 
-              holdings={holdings.filter(h => h.asset_type === 'bond')} 
+              holdings={filteredHoldings.filter(h => h.asset_type === 'bond')} 
               type="Bonds"
               loading={loading}
               onDelete={deleteHolding}
               onAdded={fetchHoldings}
               onUpdate={fetchHoldings}
+              getConnectionLabel={getConnectionLabel}
             />
           </TabsContent>
 
           {/* Other Tab */}
           <TabsContent value="other">
             <AssetTypeContent 
-              holdings={holdings.filter(h => !['crypto', 'stock', 'bond'].includes(h.asset_type))} 
+              holdings={filteredHoldings.filter(h => !['crypto', 'stock', 'bond'].includes(h.asset_type))} 
               type="Other Assets"
               loading={loading}
               onDelete={deleteHolding}
               onAdded={fetchHoldings}
               onUpdate={fetchHoldings}
+              getConnectionLabel={getConnectionLabel}
             />
           </TabsContent>
 
@@ -1101,7 +1118,8 @@ function AssetTypeContent({
   loading, 
   onDelete, 
   onAdded,
-  onUpdate
+  onUpdate,
+  getConnectionLabel
 }: { 
   holdings: Holding[]; 
   type: string; 
@@ -1109,6 +1127,7 @@ function AssetTypeContent({
   onDelete: (id: string) => void;
   onAdded: () => void;
   onUpdate: () => void;
+  getConnectionLabel: (connectionId: string | null | undefined) => string;
 }) {
   return (
     <Card>
@@ -1135,6 +1154,7 @@ function AssetTypeContent({
                 holding={holding} 
                 onDelete={onDelete}
                 onUpdate={onUpdate}
+                connectionLabel={getConnectionLabel(holding.connection_id)}
               />
             ))}
           </div>
