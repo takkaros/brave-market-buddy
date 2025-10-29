@@ -501,11 +501,38 @@ export default function Portfolio() {
     .sort((a, b) => (b.value_usd || 0) - (a.value_usd || 0))
     .slice(0, 5);
 
-  // Prepare chart data
-  const chartData = holdings.map(h => ({
-    name: h.asset_symbol,
-    value: Number(h.value_usd) || 0,
-  }));
+  // Prepare chart data - group by symbol and handle small holdings
+  const groupedHoldings = holdings.reduce((acc, h) => {
+    const symbol = h.asset_symbol;
+    const value = Number(h.value_usd) || 0;
+    
+    if (!acc[symbol]) {
+      acc[symbol] = { name: symbol, value: 0 };
+    }
+    acc[symbol].value += value;
+    return acc;
+  }, {} as Record<string, { name: string; value: number }>);
+
+  const chartDataRaw = Object.values(groupedHoldings).sort((a, b) => b.value - a.value);
+  
+  // Group holdings < 5% into "Others"
+  const SMALL_THRESHOLD = 0.05; // 5%
+  const largeHoldings: Array<{ name: string; value: number }> = [];
+  let othersValue = 0;
+  
+  chartDataRaw.forEach(item => {
+    const percentage = item.value / totalValue;
+    if (percentage >= SMALL_THRESHOLD) {
+      largeHoldings.push(item);
+    } else {
+      othersValue += item.value;
+    }
+  });
+  
+  const chartData = [...largeHoldings];
+  if (othersValue > 0) {
+    chartData.push({ name: 'Others', value: othersValue });
+  }
 
   return (
     <ErrorBoundary>
