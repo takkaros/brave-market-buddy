@@ -7,12 +7,15 @@ interface RiskHeatmapProps {
 }
 
 export function RiskHeatmap({ asset }: RiskHeatmapProps) {
-  // Generate historical risk data
+  // Generate historical risk data (last 5 years to current)
   const generateRiskData = () => {
     const data = [];
-    const startDate = new Date('2020-01-01');
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setFullYear(now.getFullYear() - 5);
     
-    for (let i = 0; i < 60; i++) {
+    const months = 60;
+    for (let i = 0; i < months; i++) {
       const date = new Date(startDate);
       date.setMonth(date.getMonth() + i);
       
@@ -44,7 +47,7 @@ export function RiskHeatmap({ asset }: RiskHeatmapProps) {
       <div className="mb-4">
         <h3 className="text-xl font-bold text-foreground mb-1">Risk Metric History</h3>
         <p className="text-sm text-muted-foreground">
-          Time-series visualization: 🟢 Low → 🟡 Moderate → 🟠 Elevated → 🔴 High
+          Time-series visualization: 🟢 Low → 🟡 Moderate → 🟠 Elevated → 🔴 High • Mock historical data
         </p>
       </div>
       <ResponsiveContainer width="100%" height={350}>

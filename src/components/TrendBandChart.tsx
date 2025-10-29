@@ -7,10 +7,12 @@ interface TrendBandChartProps {
 }
 
 export function TrendBandChart({ asset }: TrendBandChartProps) {
-  // Generate mock weekly price data
+  // Generate mock weekly price data (last 5 years to current)
   const generateData = () => {
     const data = [];
-    const startDate = new Date('2020-01-01');
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setFullYear(now.getFullYear() - 5);
     const basePrice = asset === 'BTC' ? 20000 : 1000;
     const currentPrice = asset === 'BTC' ? 95000 : 3500;
     
@@ -47,6 +49,11 @@ export function TrendBandChart({ asset }: TrendBandChartProps) {
       });
     }
     
+    // Update last value to current with today's date
+    const today = new Date();
+    data[data.length - 1].date = today.toLocaleDateString('en-US', { year: '2-digit', month: 'short' });
+    data[data.length - 1].price = currentPrice;
+    
     return data;
   };
 
@@ -57,7 +64,7 @@ export function TrendBandChart({ asset }: TrendBandChartProps) {
       <div className="mb-4">
         <h3 className="text-xl font-bold text-foreground mb-1">Trend Band Analysis</h3>
         <p className="text-sm text-muted-foreground">
-          200-Week MA (structural trend) & Bull Support Band (20w SMA + 21w EMA)
+          200-Week MA (structural trend) & Bull Support Band (20w SMA + 21w EMA) • Mock historical data
         </p>
       </div>
       <ResponsiveContainer width="100%" height={400}>

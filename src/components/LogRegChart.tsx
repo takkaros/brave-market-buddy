@@ -9,13 +9,16 @@ interface LogRegChartProps {
 export function LogRegChart({ asset }: LogRegChartProps) {
   const bands = generateLogRegBands(asset);
   
-  // Generate mock historical data with log scale
+  // Generate mock historical data with log scale (last 5 years to current)
   const generateData = () => {
     const data = [];
-    const startDate = new Date('2020-01-01');
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setFullYear(now.getFullYear() - 5); // 5 years ago
     const currentPrice = asset === 'BTC' ? 95000 : 3500;
     
-    for (let i = 0; i < 60; i++) {
+    const months = 60;
+    for (let i = 0; i < months; i++) {
       const date = new Date(startDate);
       date.setMonth(date.getMonth() + i);
       
@@ -35,7 +38,9 @@ export function LogRegChart({ asset }: LogRegChartProps) {
       });
     }
     
-    // Update last value to current
+    // Update last value to current with today's date
+    const today = new Date();
+    data[data.length - 1].date = today.toLocaleDateString('en-US', { year: '2-digit', month: 'short' });
     data[data.length - 1].price = currentPrice;
     
     return data;
@@ -48,7 +53,7 @@ export function LogRegChart({ asset }: LogRegChartProps) {
       <div className="mb-4">
         <h3 className="text-xl font-bold text-foreground mb-1">Logarithmic Regression Channel</h3>
         <p className="text-sm text-muted-foreground">
-          Fair value bands (±1σ, ±2σ) showing historical price extremes
+          Fair value bands (±1σ, ±2σ) showing historical price extremes • Mock historical data for visualization
         </p>
       </div>
       <ResponsiveContainer width="100%" height={350}>

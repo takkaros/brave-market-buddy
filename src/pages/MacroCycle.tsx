@@ -110,6 +110,31 @@ export default function MacroCycle() {
 
       {/* Main Content */}
       <div id="macro-cycle-content" className="container mx-auto px-4 pb-12 space-y-8">
+        {/* Live Price Display */}
+        {btcData && (
+          <Card className="p-6 border-2 border-primary/30">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Live {selectedAsset} Price</p>
+                <p className="text-3xl font-bold text-primary">${btcData.price.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Market Cap</p>
+                <p className="text-2xl font-bold text-foreground">${(btcData.marketCap / 1e9).toFixed(2)}B</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">24h Volume</p>
+                <p className="text-2xl font-bold text-foreground">${(btcData.volume24h / 1e9).toFixed(2)}B</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Data Source</p>
+                <p className="text-sm font-medium text-foreground">🟢 CoinGecko API</p>
+                <p className="text-xs text-muted-foreground">Updated: {new Date(btcData.timestamp).toLocaleTimeString()}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Key Metrics Dashboard */}
         <MacroCycleMetrics asset={selectedAsset} btcData={btcData} />
 
@@ -122,6 +147,25 @@ export default function MacroCycle() {
         <CycleTimeline asset={selectedAsset} />
         
         <TrendBandChart asset={selectedAsset} />
+
+        {/* Data Attribution */}
+        <Card className="p-4 bg-muted/30">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-6">
+              <div>
+                <span className="font-semibold text-foreground">Live Data:</span>
+                <span className="ml-2 text-muted-foreground">CoinGecko API • Alternative.me Fear & Greed</span>
+              </div>
+              <div>
+                <span className="font-semibold text-foreground">Charts:</span>
+                <span className="ml-2 text-muted-foreground">Mock historical data for visualization</span>
+              </div>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Last updated: {lastUpdate}
+            </span>
+          </div>
+        </Card>
 
         {/* Methodology Explanation */}
         <Card className="p-6">
