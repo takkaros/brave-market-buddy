@@ -15,7 +15,7 @@ import RiskForecast from '@/components/RiskForecast';
 import InfoTooltip from '@/components/InfoTooltip';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Settings, TrendingUp, BarChart3, RefreshCw } from 'lucide-react';
+import { MessageSquare, Settings, TrendingUp, BarChart3, RefreshCw, Plus, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -25,6 +25,7 @@ const Dashboard = () => {
   const historicalData = generateHistoricalData(180);
   const { score, categories } = calculateRiskScore(mockData);
   const previousScore = historicalData[historicalData.length - 30]?.score;
+  const [syncing, setSyncing] = useState(false);
 
   const [overallAnalysis, setOverallAnalysis] = useState<any>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
@@ -130,18 +131,61 @@ const Dashboard = () => {
     }
   }, [marketData]);
 
+  const handleSyncAll = async () => {
+    setSyncing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: connections } = await supabase
+        .from('portfolio_connections')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('connection_type', 'exchange');
+
+      if (!connections || connections.length === 0) {
+        toast.error('No exchange connections found');
+        return;
+      }
+
+      let totalSynced = 0;
+      for (const conn of connections) {
+        try {
+          const { data } = await supabase.functions.invoke('sync-exchange-balance', {
+            body: {
+              connectionId: conn.id,
+              exchangeName: conn.exchange_name,
+              apiKey: conn.api_key,
+              apiSecret: conn.api_secret,
+              apiPassphrase: conn.api_passphrase,
+            }
+          });
+          if (data?.success) totalSynced++;
+        } catch (error) {
+          console.error(`Failed to sync ${conn.name}:`, error);
+        }
+      }
+
+      toast.success(`✅ Synced ${totalSynced} exchange(s)`);
+    } catch (error) {
+      toast.error('Failed to sync exchanges');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <Navigation />
         
         <div>
-          <h1 className="text-4xl font-bold text-gradient mb-2">AI Wealth Navigator</h1>
-          <p className="text-muted-foreground">Real-time economic risk analysis with AI-powered investment guidance</p>
+          <h1 className="text-2xl md:text-4xl font-bold text-gradient mb-2">AI Wealth Navigator</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Real-time economic risk analysis with AI-powered investment guidance</p>
         </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -150,7 +194,7 @@ const Dashboard = () => {
               className="gap-2"
             >
               <RefreshCw className={`w-4 h-4 ${analysisLoading ? 'animate-spin' : ''}`} />
-              Refresh Analysis
+              <span className="hidden md:inline">Refresh Analysis</span>
             </Button>
             <Button
               variant="outline"
@@ -159,7 +203,7 @@ const Dashboard = () => {
               className="gap-2"
             >
               <BarChart3 className="w-4 h-4" />
-              All Indicators
+              <span className="hidden md:inline">All Indicators</span>
             </Button>
             <Button
               variant="outline"
@@ -168,7 +212,7 @@ const Dashboard = () => {
               className="gap-2"
             >
               <MessageSquare className="w-4 h-4" />
-              AI Chat
+              <span className="hidden md:inline">AI Chat</span>
             </Button>
             <Button
               variant="outline"
@@ -177,9 +221,45 @@ const Dashboard = () => {
               className="gap-2"
             >
               <Settings className="w-4 h-4" />
-              Settings
+              <span className="hidden md:inline">Settings</span>
             </Button>
           </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <button
+            onClick={() => navigate('/portfolio')}
+            className="glass-card rounded-lg p-4 md:p-6 hover:scale-105 transition-transform hover:shadow-lg hover:shadow-primary/20 group"
+          >
+            <Plus className="w-6 h-6 md:w-8 md:h-8 mx-auto mb-2 text-primary group-hover:scale-110 transition-transform" />
+            <p className="text-sm md:text-base font-medium text-center">Add Holding</p>
+          </button>
+
+          <button
+            onClick={() => navigate('/portfolio')}
+            className="glass-card rounded-lg p-4 md:p-6 hover:scale-105 transition-transform hover:shadow-lg hover:shadow-primary/20 group"
+          >
+            <Wallet className="w-6 h-6 md:w-8 md:h-8 mx-auto mb-2 text-primary group-hover:scale-110 transition-transform" />
+            <p className="text-sm md:text-base font-medium text-center">View Portfolio</p>
+          </button>
+
+          <button
+            onClick={() => navigate('/chat')}
+            className="glass-card rounded-lg p-4 md:p-6 hover:scale-105 transition-transform hover:shadow-lg hover:shadow-primary/20 group"
+          >
+            <MessageSquare className="w-6 h-6 md:w-8 md:h-8 mx-auto mb-2 text-primary group-hover:scale-110 transition-transform" />
+            <p className="text-sm md:text-base font-medium text-center">Get AI Advice</p>
+          </button>
+
+          <button
+            onClick={handleSyncAll}
+            disabled={syncing}
+            className="glass-card rounded-lg p-4 md:p-6 hover:scale-105 transition-transform hover:shadow-lg hover:shadow-primary/20 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          >
+            <RefreshCw className={`w-6 h-6 md:w-8 md:h-8 mx-auto mb-2 text-primary group-hover:scale-110 transition-transform ${syncing ? 'animate-spin' : ''}`} />
+            <p className="text-sm md:text-base font-medium text-center">Sync Exchanges</p>
+          </button>
         </div>
 
         {/* Alert Banner */}

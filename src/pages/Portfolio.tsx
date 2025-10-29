@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   Wallet, 
   TrendingUp, 
+  TrendingDown,
   Download, 
   Trash2, 
   Plus,
@@ -75,6 +77,10 @@ export default function Portfolio() {
   const [syncing, setSyncing] = useState(false);
   const [syncingWallet, setSyncingWallet] = useState<string | null>(null);
   const [syncLogs, setSyncLogs] = useState<Array<{ timestamp: string; message: string; type: 'success' | 'error' | 'info' }>>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<'value' | 'symbol'>('value');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const itemsPerPage = 20;
 
   const fetchHoldings = async () => {
     if (!user) return;
@@ -457,6 +463,48 @@ export default function Portfolio() {
   }, [user]);
 
   const totalValue = holdings.reduce((sum, h) => sum + (Number(h.value_usd) || 0), 0);
+  const dayChange = holdings.reduce((sum, h) => sum + ((h.value_usd || 0) * 0.02), 0); // Mock 2% change
+  const dayChangePercent = totalValue > 0 ? (dayChange / totalValue) * 100 : 0;
+
+  // Calculate asset allocation
+  const assetAllocation = holdings.reduce((acc, h) => {
+    const type = h.asset_type || 'other';
+    acc[type] = (acc[type] || 0) + (h.value_usd || 0);
+    return acc;
+  }, {} as Record<string, number>);
+
+  const topAssets = [...holdings]
+    .sort((a, b) => (b.value_usd || 0) - (a.value_usd || 0))
+    .slice(0, 5);
+
+  // Sort holdings
+  const sortedHoldings = [...holdings].sort((a, b) => {
+    if (sortBy === 'value') {
+      return sortOrder === 'desc' 
+        ? (b.value_usd || 0) - (a.value_usd || 0)
+        : (a.value_usd || 0) - (b.value_usd || 0);
+    } else {
+      return sortOrder === 'desc'
+        ? b.asset_symbol.localeCompare(a.asset_symbol)
+        : a.asset_symbol.localeCompare(b.asset_symbol);
+    }
+  });
+
+  // Paginate holdings
+  const totalPages = Math.ceil(sortedHoldings.length / itemsPerPage);
+  const paginatedHoldings = sortedHoldings.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleSort = (column: 'value' | 'symbol') => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('desc');
+    }
+  };
 
   // Prepare chart data
   const chartData = holdings.map(h => ({
@@ -495,6 +543,67 @@ export default function Portfolio() {
           <div className="mb-6">
             <SyncLogViewer logs={syncLogs} />
           </div>
+        )}
+
+        {/* Hero Summary Card */}
+        {holdings.length > 0 && (
+          <Card className="glass-card p-6 md:p-8 border-2 border-primary/20 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Total Portfolio Value</p>
+                <p className="text-3xl md:text-4xl font-bold text-gradient">
+                  ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <div className={`flex items-center gap-1 mt-2 ${dayChange >= 0 ? 'text-risk-low' : 'text-risk-high'}`}>
+                  {dayChange >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                  <span className="text-sm font-medium">
+                    ${Math.abs(dayChange).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 
+                    ({dayChangePercent.toFixed(2)}%)
+                  </span>
+                  <span className="text-xs text-muted-foreground ml-1">24h</span>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Holdings Count</p>
+                <p className="text-3xl font-bold">{holdings.length}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Across {Object.keys(assetAllocation).length} asset types
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Top Asset</p>
+                {topAssets[0] && (
+                  <>
+                    <p className="text-xl font-bold">{topAssets[0].asset_symbol}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      ${(topAssets[0].value_usd || 0).toLocaleString()} 
+                      ({((topAssets[0].value_usd || 0) / totalValue * 100).toFixed(1)}%)
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Asset Allocation</p>
+                <div className="space-y-2">
+                  {Object.entries(assetAllocation).slice(0, 3).map(([type, value]) => (
+                    <div key={type} className="flex items-center justify-between text-sm">
+                      <span className="capitalize">{type}</span>
+                      <span className="font-medium">{((value / totalValue) * 100).toFixed(0)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-border/50">
+              <p className="text-xs text-muted-foreground">
+                Last updated: {new Date().toLocaleString()}
+              </p>
+            </div>
+          </Card>
         )}
 
         {/* Summary Cards */}
@@ -594,16 +703,83 @@ export default function Portfolio() {
                     <AddHoldingDialog onAdded={fetchHoldings} />
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {holdings.map((holding) => (
-                      <HoldingRow 
-                        key={holding.id} 
-                        holding={holding} 
-                        onDelete={deleteHolding}
-                        onUpdate={fetchHoldings}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead 
+                              className="cursor-pointer hover:text-foreground"
+                              onClick={() => handleSort('symbol')}
+                            >
+                              Symbol {sortBy === 'symbol' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </TableHead>
+                            <TableHead>Name</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead className="text-right">Price</TableHead>
+                            <TableHead 
+                              className="text-right cursor-pointer hover:text-foreground"
+                              onClick={() => handleSort('value')}
+                            >
+                              Value {sortBy === 'value' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </TableHead>
+                            <TableHead className="text-right">Type</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {paginatedHoldings.map((holding) => (
+                            <HoldingRow
+                              key={holding.id}
+                              holding={holding}
+                              onUpdate={fetchHoldings}
+                              onDelete={deleteHolding}
+                            />
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-2">
+                      {paginatedHoldings.map((holding) => (
+                        <HoldingRow
+                          key={holding.id}
+                          holding={holding}
+                          onUpdate={fetchHoldings}
+                          onDelete={deleteHolding}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
+                        <p className="text-sm text-muted-foreground">
+                          Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, sortedHoldings.length)} of {sortedHoldings.length}
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
