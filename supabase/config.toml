@@ -18,9 +18,6 @@ verify_jwt = false
 [functions.fetch-economic-data]
 verify_jwt = false
 
-[functions.fetch-btc-macro-data]
-verify_jwt = false
-
 [functions.check-api-health]
 verify_jwt = false
 
