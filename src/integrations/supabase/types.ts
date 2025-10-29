@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_key_access_log: {
+        Row: {
+          access_type: string
+          accessed_at: string
+          connection_id: string
+          error_message: string | null
+          id: string
+          ip_address: unknown
+          success: boolean
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          access_type: string
+          accessed_at?: string
+          connection_id: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown
+          success?: boolean
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          access_type?: string
+          accessed_at?: string
+          connection_id?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_key_access_log_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "portfolio_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       economic_indicators: {
         Row: {
           created_at: string
@@ -53,8 +97,11 @@ export type Database = {
       portfolio_connections: {
         Row: {
           api_key: string | null
+          api_key_encrypted: string | null
           api_passphrase: string | null
+          api_passphrase_encrypted: string | null
           api_secret: string | null
+          api_secret_encrypted: string | null
           blockchain: string | null
           connection_type: string
           created_at: string
@@ -69,8 +116,11 @@ export type Database = {
         }
         Insert: {
           api_key?: string | null
+          api_key_encrypted?: string | null
           api_passphrase?: string | null
+          api_passphrase_encrypted?: string | null
           api_secret?: string | null
+          api_secret_encrypted?: string | null
           blockchain?: string | null
           connection_type: string
           created_at?: string
@@ -85,8 +135,11 @@ export type Database = {
         }
         Update: {
           api_key?: string | null
+          api_key_encrypted?: string | null
           api_passphrase?: string | null
+          api_passphrase_encrypted?: string | null
           api_secret?: string | null
+          api_secret_encrypted?: string | null
           blockchain?: string | null
           connection_type?: string
           created_at?: string
@@ -210,7 +263,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      decrypt_secret: { Args: { encrypted_text: string }; Returns: string }
+      encrypt_secret: { Args: { secret_text: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
