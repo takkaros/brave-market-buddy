@@ -34,6 +34,7 @@ import TradingPanel from '@/components/TradingPanel';
 import PerformanceDashboard from '@/components/PerformanceDashboard';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import PortfolioBalanceChart from '@/components/PortfolioBalanceChart';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', '#6366f1'];
 
@@ -573,6 +574,17 @@ export default function Portfolio() {
         {syncLogs.length > 0 && (
           <div className="mb-6">
             <SyncLogViewer logs={syncLogs} />
+          </div>
+        )}
+
+        {/* Portfolio Balance Chart */}
+        {holdings.length > 0 && (
+          <div className="mb-6">
+            <PortfolioBalanceChart 
+              holdings={holdings} 
+              totalValue={totalValue}
+              totalCost={totalCost}
+            />
           </div>
         )}
 
