@@ -766,7 +766,10 @@ export default function Portfolio() {
                               <p className="font-semibold">{connection.name}</p>
                               <p className="text-sm text-muted-foreground">
                                 <Badge variant="outline" className="mr-2">{connection.blockchain}</Badge>
-                                {connection.wallet_address.slice(0, 10)}...{connection.wallet_address.slice(-8)}
+                                {connection.wallet_address.length > 20 
+                                  ? `${connection.wallet_address.slice(0, 10)}...${connection.wallet_address.slice(-8)}`
+                                  : connection.wallet_address
+                                }
                               </p>
                               {connection.last_synced_at && (
                                 <p className="text-xs text-muted-foreground mt-1">

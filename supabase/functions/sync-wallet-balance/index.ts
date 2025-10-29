@@ -55,9 +55,27 @@ serve(async (req) => {
     }
 
     const blockchain = connection.blockchain;
-    const walletAddress = connection.wallet_address;
+    let walletAddress = connection.wallet_address;
     
-    console.log('🔐 Using stored wallet details for blockchain:', blockchain);
+    // Clean wallet address: remove any blockchain prefix that might have been stored
+    const blockchainPrefixes = [
+      `${blockchain.toLowerCase()}:`,
+      `${blockchain.toLowerCase()}`,
+      'bitcoin:', 'bitcoin',
+      'ethereum:', 'ethereum',
+      'eth:', 'eth',
+      'btc:', 'btc',
+    ];
+    
+    for (const prefix of blockchainPrefixes) {
+      if (walletAddress.toLowerCase().startsWith(prefix)) {
+        walletAddress = walletAddress.substring(prefix.length);
+        console.log('🧹 Cleaned wallet address from:', connection.wallet_address, 'to:', walletAddress);
+        break;
+      }
+    }
+    
+    console.log('🔐 Using wallet details - blockchain:', blockchain, 'address:', walletAddress);
 
     let balance = 0;
     let holdings: any[] = [];

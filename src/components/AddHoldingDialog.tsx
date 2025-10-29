@@ -384,6 +384,26 @@ export default function AddHoldingDialog({ onAdded }: Props) {
       const validated = walletSchema.parse(walletForm);
       setLoading(true);
 
+      // Clean wallet address: remove common prefixes that users might paste
+      let cleanedAddress = validated.wallet_address.trim();
+      
+      // Remove blockchain name prefix (e.g., "Bitcoin:", "bitcoin:", "Bitcoinxpub", etc.)
+      const blockchainPrefixes = [
+        `${validated.blockchain.toLowerCase()}:`,
+        `${validated.blockchain.toLowerCase()}`,
+        'bitcoin:', 'bitcoin',
+        'ethereum:', 'ethereum',
+        'eth:', 'eth',
+        'btc:', 'btc',
+      ];
+      
+      for (const prefix of blockchainPrefixes) {
+        if (cleanedAddress.toLowerCase().startsWith(prefix)) {
+          cleanedAddress = cleanedAddress.substring(prefix.length);
+          break;
+        }
+      }
+
       // Insert wallet connection
       const { data: connectionData, error } = await supabase
         .from('portfolio_connections')
@@ -392,7 +412,7 @@ export default function AddHoldingDialog({ onAdded }: Props) {
           connection_type: 'wallet',
           name: validated.name,
           blockchain: validated.blockchain,
-          wallet_address: validated.wallet_address,
+          wallet_address: cleanedAddress,
         })
         .select()
         .single();
@@ -405,8 +425,6 @@ export default function AddHoldingDialog({ onAdded }: Props) {
         {
           body: {
             connectionId: connectionData.id,
-            blockchain: validated.blockchain,
-            walletAddress: validated.wallet_address,
           },
         }
       );
