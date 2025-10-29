@@ -4,46 +4,31 @@ import { generateLogRegBands } from '@/utils/macroCalculations';
 
 interface LogRegChartProps {
   asset: string;
+  historicalData?: Array<{ time: number; price: number }>;
+  currentPrice?: number;
 }
 
-export function LogRegChart({ asset }: LogRegChartProps) {
+export function LogRegChart({ asset, historicalData, currentPrice }: LogRegChartProps) {
   const bands = generateLogRegBands(asset);
   
-  // Generate mock historical data with log scale (last 5 years to current)
+  // Use real historical data if available, otherwise show message
   const generateData = () => {
-    const data = [];
-    const now = new Date();
-    const startDate = new Date(now);
-    startDate.setFullYear(now.getFullYear() - 5); // 5 years ago
-    const currentPrice = asset === 'BTC' ? 95000 : 3500;
-    
-    const months = 60;
-    for (let i = 0; i < months; i++) {
-      const date = new Date(startDate);
-      date.setMonth(date.getMonth() + i);
-      
-      // Generate price with some volatility around fair value
-      const progress = i / 60;
-      const noise = Math.sin(i * 0.5) * 0.3 + (Math.random() - 0.5) * 0.2;
-      const price = bands.fair * (0.5 + progress + noise);
-      
-      data.push({
+    if (!historicalData || historicalData.length === 0) {
+      return [];
+    }
+
+    return historicalData.map(point => {
+      const date = new Date(point.time);
+      return {
         date: date.toLocaleDateString('en-US', { year: '2-digit', month: 'short' }),
-        price: Math.round(price),
+        price: Math.round(point.price),
         fair: Math.round(bands.fair),
         upper1: Math.round(bands.upper1),
         upper2: Math.round(bands.upper2),
         lower1: Math.round(bands.lower1),
         lower2: Math.round(bands.lower2),
-      });
-    }
-    
-    // Update last value to current with today's date
-    const today = new Date();
-    data[data.length - 1].date = today.toLocaleDateString('en-US', { year: '2-digit', month: 'short' });
-    data[data.length - 1].price = currentPrice;
-    
-    return data;
+      };
+    });
   };
 
   const data = generateData();
@@ -53,10 +38,15 @@ export function LogRegChart({ asset }: LogRegChartProps) {
       <div className="mb-4">
         <h3 className="text-xl font-bold text-foreground mb-1">Logarithmic Regression Channel</h3>
         <p className="text-sm text-muted-foreground">
-          Fair value bands (±1σ, ±2σ) showing historical price extremes • Mock historical data for visualization
+          Fair value bands (±1σ, ±2σ) • Real historical data from Binance API
         </p>
       </div>
-      <ResponsiveContainer width="100%" height={350}>
+      {data.length === 0 ? (
+        <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+          Loading historical data...
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={350}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis 
@@ -89,6 +79,7 @@ export function LogRegChart({ asset }: LogRegChartProps) {
           <Line type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={3} dot={false} name="Price" />
         </LineChart>
       </ResponsiveContainer>
+      )}
     </Card>
   );
 }

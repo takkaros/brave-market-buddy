@@ -4,57 +4,34 @@ import { calculateMA, calculateEMA } from '@/utils/macroCalculations';
 
 interface TrendBandChartProps {
   asset: string;
+  historicalData?: Array<{ time: number; price: number }>;
+  currentPrice?: number;
 }
 
-export function TrendBandChart({ asset }: TrendBandChartProps) {
-  // Generate mock weekly price data (last 5 years to current)
+export function TrendBandChart({ asset, historicalData, currentPrice }: TrendBandChartProps) {
+  // Use real historical data to calculate moving averages
   const generateData = () => {
-    const data = [];
-    const now = new Date();
-    const startDate = new Date(now);
-    startDate.setFullYear(now.getFullYear() - 5);
-    const basePrice = asset === 'BTC' ? 20000 : 1000;
-    const currentPrice = asset === 'BTC' ? 95000 : 3500;
-    
-    // Generate weekly data points
-    const weeks = 260; // ~5 years
-    const prices: number[] = [];
-    
-    for (let i = 0; i < weeks; i++) {
-      const progress = i / weeks;
-      const trend = basePrice + (currentPrice - basePrice) * progress;
-      const volatility = trend * 0.15 * Math.sin(i * 0.1) + (Math.random() - 0.5) * trend * 0.1;
-      prices.push(trend + volatility);
+    if (!historicalData || historicalData.length === 0) {
+      return [];
     }
+
+    const prices = historicalData.map(p => p.price);
     
-    // Calculate moving averages
-    const ma200 = calculateMA(prices, 200);
-    const ma20 = calculateMA(prices, 20);
-    const ema21 = calculateEMA(prices, 21);
+    // Calculate moving averages - need enough data points
+    const ma200 = calculateMA(prices, Math.min(200, prices.length));
+    const ma20 = calculateMA(prices, Math.min(20, prices.length));
+    const ema21 = calculateEMA(prices, Math.min(21, prices.length));
     
-    for (let i = 0; i < weeks; i++) {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + (i * 7));
-      
-      // Bull Support Band is the area between 20-week SMA and 21-week EMA
-      const bullSupportUpper = ma20[i];
-      const bullSupportLower = ema21[i];
-      
-      data.push({
+    return historicalData.map((point, i) => {
+      const date = new Date(point.time);
+      return {
         date: date.toLocaleDateString('en-US', { year: '2-digit', month: 'short' }),
-        price: Math.round(prices[i]),
-        ma200: Math.round(ma200[i]),
-        ma20: Math.round(ma20[i]),
-        ema21: Math.round(ema21[i]),
-      });
-    }
-    
-    // Update last value to current with today's date
-    const today = new Date();
-    data[data.length - 1].date = today.toLocaleDateString('en-US', { year: '2-digit', month: 'short' });
-    data[data.length - 1].price = currentPrice;
-    
-    return data;
+        price: Math.round(point.price),
+        ma200: Math.round(ma200[i] || point.price),
+        ma20: Math.round(ma20[i] || point.price),
+        ema21: Math.round(ema21[i] || point.price),
+      };
+    });
   };
 
   const data = generateData();
@@ -64,10 +41,15 @@ export function TrendBandChart({ asset }: TrendBandChartProps) {
       <div className="mb-4">
         <h3 className="text-xl font-bold text-foreground mb-1">Trend Band Analysis</h3>
         <p className="text-sm text-muted-foreground">
-          200-Week MA (structural trend) & Bull Support Band (20w SMA + 21w EMA) • Mock historical data
+          200-Week MA (structural trend) & Bull Support Band (20w SMA + 21w EMA) • Real data from Binance
         </p>
       </div>
-      <ResponsiveContainer width="100%" height={400}>
+      {data.length === 0 ? (
+        <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+          Loading historical data...
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={400}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis 
@@ -126,6 +108,7 @@ export function TrendBandChart({ asset }: TrendBandChartProps) {
           />
         </LineChart>
       </ResponsiveContainer>
+      )}
       
       {/* Legend Explanation */}
       <div className="mt-4 space-y-2 text-sm text-muted-foreground">

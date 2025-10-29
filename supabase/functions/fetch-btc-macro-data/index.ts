@@ -12,6 +12,7 @@ interface BTCMacroData {
   volume24h: number;
   fearGreedIndex: number;
   timestamp: string;
+  historicalPrices?: Array<{ time: number; price: number }>;
 }
 
 Deno.serve(async (req) => {
@@ -20,29 +21,43 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Fetch BTC price and market data
-    const coinGeckoResponse = await fetch(
-      'https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&community_data=false&developer_data=false'
+    // Fetch BTC price from Binance (free, no API key needed)
+    const binanceResponse = await fetch(
+      'https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT'
     );
     
-    if (!coinGeckoResponse.ok) {
-      throw new Error('Failed to fetch CoinGecko data');
+    if (!binanceResponse.ok) {
+      throw new Error('Failed to fetch Binance data');
     }
     
-    const btcData = await coinGeckoResponse.json();
+    const binanceData = await binanceResponse.json();
+    const price = parseFloat(binanceData.lastPrice);
+    const volume24h = parseFloat(binanceData.quoteVolume);
     
-    // Fetch global crypto market data for dominance
-    const globalResponse = await fetch(
-      'https://api.coingecko.com/api/v3/global'
-    );
-    
-    if (!globalResponse.ok) {
-      throw new Error('Failed to fetch global market data');
+    // Fetch BTC dominance from CoinCap (free, no API key needed)
+    let dominance = 57; // Default
+    let marketCap = price * 19800000; // Approximate circulating supply
+    try {
+      const coinCapResponse = await fetch('https://api.coincap.io/v2/assets/bitcoin');
+      if (coinCapResponse.ok) {
+        const coinCapData = await coinCapResponse.json();
+        marketCap = parseFloat(coinCapData.data.marketCapUsd);
+        
+        // Get total market cap for dominance calculation
+        const globalResponse = await fetch('https://api.coincap.io/v2/assets?limit=100');
+        if (globalResponse.ok) {
+          const globalData = await globalResponse.json();
+          const totalMarketCap = globalData.data.reduce((sum: number, asset: any) => 
+            sum + parseFloat(asset.marketCapUsd), 0
+          );
+          dominance = (marketCap / totalMarketCap) * 100;
+        }
+      }
+    } catch (error) {
+      console.log('CoinCap API failed, using defaults:', error);
     }
     
-    const globalData = await globalResponse.json();
-    
-    // Fetch Fear & Greed Index
+    // Fetch Fear & Greed Index (free)
     let fearGreedIndex = 50; // Default neutral
     try {
       const fearGreedResponse = await fetch(
@@ -56,13 +71,36 @@ Deno.serve(async (req) => {
       console.log('Fear & Greed API failed, using default:', error);
     }
     
+    // Fetch historical data (5 years of monthly data) from Binance
+    let historicalPrices: Array<{ time: number; price: number }> = [];
+    try {
+      // Get monthly klines for last 5 years (60 months)
+      const endTime = Date.now();
+      const startTime = endTime - (5 * 365 * 24 * 60 * 60 * 1000);
+      
+      const klinesResponse = await fetch(
+        `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1M&startTime=${startTime}&endTime=${endTime}&limit=60`
+      );
+      
+      if (klinesResponse.ok) {
+        const klines = await klinesResponse.json();
+        historicalPrices = klines.map((k: any) => ({
+          time: k[0], // Open time
+          price: parseFloat(k[4]) // Close price
+        }));
+      }
+    } catch (error) {
+      console.log('Failed to fetch historical data:', error);
+    }
+    
     const macroData: BTCMacroData = {
-      price: btcData.market_data.current_price.usd,
-      dominance: globalData.data.market_cap_percentage.btc,
-      marketCap: btcData.market_data.market_cap.usd,
-      volume24h: btcData.market_data.total_volume.usd,
-      fearGreedIndex: fearGreedIndex,
+      price,
+      dominance,
+      marketCap,
+      volume24h,
+      fearGreedIndex,
       timestamp: new Date().toISOString(),
+      historicalPrices,
     };
 
     return new Response(JSON.stringify(macroData), {

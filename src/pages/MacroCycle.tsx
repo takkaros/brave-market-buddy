@@ -128,7 +128,7 @@ export default function MacroCycle() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Data Source</p>
-                <p className="text-sm font-medium text-foreground">🟢 CoinGecko API</p>
+                <p className="text-sm font-medium text-foreground">🟢 Binance API (Free)</p>
                 <p className="text-xs text-muted-foreground">Updated: {new Date(btcData.timestamp).toLocaleTimeString()}</p>
               </div>
             </div>
@@ -140,25 +140,25 @@ export default function MacroCycle() {
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <LogRegChart asset={selectedAsset} />
-          <RiskHeatmap asset={selectedAsset} />
+          <LogRegChart asset={selectedAsset} historicalData={btcData?.historicalPrices} currentPrice={btcData?.price} />
+          <RiskHeatmap asset={selectedAsset} historicalData={btcData?.historicalPrices} />
         </div>
 
         <CycleTimeline asset={selectedAsset} />
         
-        <TrendBandChart asset={selectedAsset} />
+        <TrendBandChart asset={selectedAsset} historicalData={btcData?.historicalPrices} currentPrice={btcData?.price} />
 
         {/* Data Attribution */}
         <Card className="p-4 bg-muted/30">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-6">
               <div>
-                <span className="font-semibold text-foreground">Live Data:</span>
-                <span className="ml-2 text-muted-foreground">CoinGecko API • Alternative.me Fear & Greed</span>
+                <span className="font-semibold text-foreground">Free APIs:</span>
+                <span className="ml-2 text-muted-foreground">Binance (price & history) • CoinCap (dominance) • Alternative.me (Fear & Greed)</span>
               </div>
               <div>
-                <span className="font-semibold text-foreground">Charts:</span>
-                <span className="ml-2 text-muted-foreground">Mock historical data for visualization</span>
+                <span className="font-semibold text-foreground">Data:</span>
+                <span className="ml-2 text-muted-foreground">Real historical prices, no API keys required</span>
               </div>
             </div>
             <span className="text-xs text-muted-foreground">

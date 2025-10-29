@@ -4,33 +4,25 @@ import { calculateRiskMetric } from '@/utils/macroCalculations';
 
 interface RiskHeatmapProps {
   asset: string;
+  historicalData?: Array<{ time: number; price: number }>;
 }
 
-export function RiskHeatmap({ asset }: RiskHeatmapProps) {
-  // Generate historical risk data (last 5 years to current)
+export function RiskHeatmap({ asset, historicalData }: RiskHeatmapProps) {
+  // Calculate risk from real historical data
   const generateRiskData = () => {
-    const data = [];
-    const now = new Date();
-    const startDate = new Date(now);
-    startDate.setFullYear(now.getFullYear() - 5);
-    
-    const months = 60;
-    for (let i = 0; i < months; i++) {
-      const date = new Date(startDate);
-      date.setMonth(date.getMonth() + i);
-      
-      // Generate risk score with cycle pattern
-      const cycleProgress = (i / 60) * 100;
-      const noise = (Math.random() - 0.5) * 15;
-      const risk = Math.min(100, Math.max(0, cycleProgress * 0.8 + noise));
-      
-      data.push({
-        date: date.toLocaleDateString('en-US', { year: '2-digit', month: 'short' }),
-        risk: Math.round(risk),
-      });
+    if (!historicalData || historicalData.length === 0) {
+      return [];
     }
-    
-    return data;
+
+    return historicalData.map(point => {
+      const date = new Date(point.time);
+      const risk = calculateRiskMetric(asset, point.price);
+      
+      return {
+        date: date.toLocaleDateString('en-US', { year: '2-digit', month: 'short' }),
+        risk: risk,
+      };
+    });
   };
 
   const data = generateRiskData();
@@ -47,10 +39,15 @@ export function RiskHeatmap({ asset }: RiskHeatmapProps) {
       <div className="mb-4">
         <h3 className="text-xl font-bold text-foreground mb-1">Risk Metric History</h3>
         <p className="text-sm text-muted-foreground">
-          Time-series visualization: 🟢 Low → 🟡 Moderate → 🟠 Elevated → 🔴 High • Mock historical data
+          Time-series visualization: 🟢 Low → 🟡 Moderate → 🟠 Elevated → 🔴 High • Real data from Binance
         </p>
       </div>
-      <ResponsiveContainer width="100%" height={350}>
+      {data.length === 0 ? (
+        <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+          Loading historical data...
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={350}>
         <AreaChart data={data}>
           <defs>
             <linearGradient id="riskGradient" x1="0" y1="0" x2="0" y2="1">
@@ -102,6 +99,7 @@ export function RiskHeatmap({ asset }: RiskHeatmapProps) {
           <Line y={70} stroke="#ef4444" strokeDasharray="5 5" />
         </AreaChart>
       </ResponsiveContainer>
+      )}
       <div className="flex justify-around mt-4 text-xs text-muted-foreground">
         <span>🟢 0-30: Low Risk</span>
         <span>🟡 30-50: Moderate</span>
