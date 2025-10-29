@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit2, Trash2, Check, X, TrendingUp, TrendingDown } from 'lucide-react';
+import { Edit2, Trash2, Check, X, TrendingUp, TrendingDown, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 
@@ -26,10 +26,11 @@ interface HoldingRowProps {
   holding: Holding;
   onUpdate?: () => void;
   onDelete: (id: string) => void;
+  onHide?: (id: string) => void;
   connectionLabel?: string;
 }
 
-const HoldingRow = ({ holding, onUpdate, onDelete, connectionLabel }: HoldingRowProps) => {
+const HoldingRow = ({ holding, onUpdate, onDelete, onHide, connectionLabel }: HoldingRowProps) => {
   const [editingNotes, setEditingNotes] = useState(false);
   const [editingAmount, setEditingAmount] = useState(false);
   const [notes, setNotes] = useState(holding.notes || '');
@@ -273,6 +274,18 @@ const HoldingRow = ({ holding, onUpdate, onDelete, connectionLabel }: HoldingRow
           >
             <Edit2 className="w-4 h-4" />
           </Button>
+          {onHide && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onHide(holding.id)}
+              aria-label="Hide holding"
+              title="Hide this holding (won't be updated during syncs)"
+              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring h-8 w-8 p-0 text-yellow-600 hover:text-yellow-700 dark:text-yellow-500 dark:hover:text-yellow-400"
+            >
+              <EyeOff className="w-4 h-4" />
+            </Button>
+          )}
           <Button
             size="sm"
             variant="ghost"

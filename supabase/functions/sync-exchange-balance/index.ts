@@ -412,14 +412,18 @@ serve(async (req) => {
       }
     }
 
-    // Delete existing holdings for this connection
+    // Delete existing NON-HIDDEN holdings for this connection
+    // This preserves hidden holdings during sync
     const { error: deleteError } = await supabase
       .from('portfolio_holdings')
       .delete()
-      .eq('connection_id', connectionId);
+      .eq('connection_id', connectionId)
+      .eq('is_hidden', false);  // Only delete visible holdings
     
     if (deleteError) {
       console.error('❌ Failed to delete old holdings:', deleteError);
+    } else {
+      console.log('✅ Deleted old visible holdings (preserved hidden ones)');
     }
 
     // Insert new holdings

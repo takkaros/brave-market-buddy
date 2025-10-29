@@ -363,6 +363,7 @@ export type Database = {
           connection_id: string | null
           created_at: string
           id: string
+          is_hidden: boolean | null
           last_updated_at: string
           notes: string | null
           price_usd: number | null
@@ -379,6 +380,7 @@ export type Database = {
           connection_id?: string | null
           created_at?: string
           id?: string
+          is_hidden?: boolean | null
           last_updated_at?: string
           notes?: string | null
           price_usd?: number | null
@@ -395,6 +397,7 @@ export type Database = {
           connection_id?: string | null
           created_at?: string
           id?: string
+          is_hidden?: boolean | null
           last_updated_at?: string
           notes?: string | null
           price_usd?: number | null
