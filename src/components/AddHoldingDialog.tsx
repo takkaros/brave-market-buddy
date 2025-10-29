@@ -150,6 +150,35 @@ export default function AddHoldingDialog({ onAdded }: Props) {
     try {
       const validated = holdingSchema.parse(form);
       
+      // Validate amount
+      const amount = parseFloat(validated.amount);
+      if (isNaN(amount)) {
+        toast({
+          title: 'Invalid Amount',
+          description: 'Please enter a valid number',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      if (amount <= 0) {
+        toast({
+          title: 'Invalid Amount',
+          description: 'Amount must be positive',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      if (amount > 1e15) {
+        toast({
+          title: 'Amount Too Large',
+          description: 'Please enter a smaller amount',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
       if (!currentPrice) {
         toast({
           title: 'Price Required',
@@ -161,7 +190,6 @@ export default function AddHoldingDialog({ onAdded }: Props) {
 
       setLoading(true);
 
-      const amount = parseFloat(validated.amount);
       const priceUsd = currentPrice;
       const valueUsd = amount * priceUsd;
 
@@ -224,7 +252,7 @@ export default function AddHoldingDialog({ onAdded }: Props) {
       const validated = apiConnectionSchema.parse(apiForm);
       setLoading(true);
 
-      const { error } = await supabase.from('portfolio_connections').insert({
+      const { data: connectionData, error } = await supabase.from('portfolio_connections').insert({
         user_id: user.id,
         connection_type: 'exchange',
         name: validated.name,
@@ -232,14 +260,91 @@ export default function AddHoldingDialog({ onAdded }: Props) {
         api_key: validated.api_key,
         api_secret: validated.api_secret,
         api_passphrase: validated.api_passphrase || null,
-      });
+      }).select().single();
 
       if (error) throw error;
 
       toast({
-        title: 'Connection Added',
-        description: `${validated.exchange_name} API connected successfully`,
+        title: 'Connection Saved',
+        description: `${validated.exchange_name} API credentials saved`,
       });
+
+      // Try to sync immediately
+      try {
+        const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-exchange-balance', {
+          body: { connectionId: connectionData.id }
+        });
+
+        if (syncError) {
+          const errorMsg = syncError.message || 'Unknown error';
+          
+          // Parse error message for specific issues
+          if (errorMsg.includes('passphrase') || errorMsg.includes('400005')) {
+            toast({
+              title: '❌ Invalid API Passphrase',
+              description: 'The API passphrase is incorrect. Please check and try again.',
+              variant: 'destructive',
+              duration: 10000,
+            });
+          } else if (errorMsg.includes('signature') || errorMsg.includes('400007')) {
+            toast({
+              title: '❌ Invalid API Secret',
+              description: 'The API secret is incorrect. Please verify your credentials.',
+              variant: 'destructive',
+              duration: 10000,
+            });
+          } else if (errorMsg.includes('400006')) {
+            toast({
+              title: '❌ Invalid API Key',
+              description: 'The API key is incorrect or has been revoked.',
+              variant: 'destructive',
+              duration: 10000,
+            });
+          } else if (errorMsg.includes('401') || errorMsg.includes('unauthorized')) {
+            toast({
+              title: '❌ Unauthorized',
+              description: 'API key may be expired or revoked.',
+              variant: 'destructive',
+              duration: 10000,
+            });
+          } else if (errorMsg.includes('403') || errorMsg.includes('permissions')) {
+            toast({
+              title: '❌ Insufficient Permissions',
+              description: "Please enable 'General' or 'Read' access for this API key.",
+              variant: 'destructive',
+              duration: 10000,
+            });
+          } else if (errorMsg.includes('429') || errorMsg.includes('rate limit')) {
+            toast({
+              title: '⏱️ Rate Limit Exceeded',
+              description: 'Please wait 60 seconds before trying again.',
+              variant: 'destructive',
+              duration: 10000,
+            });
+          } else {
+            toast({
+              title: 'Sync Failed',
+              description: errorMsg,
+              variant: 'destructive',
+              duration: 10000,
+            });
+          }
+        } else {
+          const holdingsCount = syncData?.holdingsCount || 0;
+          toast({
+            title: '✅ Success!',
+            description: `Connected and synced ${holdingsCount} holdings`,
+            duration: 5000,
+          });
+        }
+      } catch (syncError: any) {
+        toast({
+          title: 'Sync Error',
+          description: syncError.message || 'Failed to sync exchange data',
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
 
       setApiForm({ name: '', exchange_name: '', api_key: '', api_secret: '', api_passphrase: '' });
       setOpen(false);
@@ -496,6 +601,50 @@ export default function AddHoldingDialog({ onAdded }: Props) {
 
           {/* API Connection Tab */}
           <TabsContent value="api" className="space-y-4 mt-4">
+            {apiForm.exchange_name && (
+              <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <h4 className="font-semibold mb-2 text-sm">
+                  {apiForm.exchange_name === 'kucoin' && '🟢 KuCoin API Setup'}
+                  {apiForm.exchange_name === 'binance' && '🟡 Binance API Setup'}
+                  {apiForm.exchange_name === 'coinbase' && '🔵 Coinbase API Setup'}
+                  {apiForm.exchange_name === 'kraken' && '🟣 Kraken API Setup'}
+                </h4>
+                <ul className="text-xs space-y-1 text-muted-foreground">
+                  {apiForm.exchange_name === 'kucoin' && (
+                    <>
+                      <li>✓ Create API key with "General" permission</li>
+                      <li>✓ Enable IP whitelist (optional but recommended)</li>
+                      <li>✓ API Key Version must be "2"</li>
+                      <li>✓ Passphrase is required</li>
+                      <li>✗ Do NOT enable trading permissions</li>
+                    </>
+                  )}
+                  {apiForm.exchange_name === 'binance' && (
+                    <>
+                      <li>✓ Enable "Enable Reading" permission</li>
+                      <li>✓ Do NOT enable "Enable Spot & Margin Trading"</li>
+                      <li>✓ Enable IP access restrictions (optional)</li>
+                      <li>✗ Passphrase not required for Binance</li>
+                    </>
+                  )}
+                  {apiForm.exchange_name === 'coinbase' && (
+                    <>
+                      <li>✓ Create API key with "wallet:accounts:read" permission</li>
+                      <li>✓ Use API Key and Secret (not OAuth)</li>
+                      <li>✗ Do NOT enable trading permissions</li>
+                    </>
+                  )}
+                  {apiForm.exchange_name === 'kraken' && (
+                    <>
+                      <li>✓ Query Funds permission required</li>
+                      <li>✓ API Secret is Base64 encoded</li>
+                      <li>✗ Do NOT enable trading permissions</li>
+                    </>
+                  )}
+                </ul>
+              </div>
+            )}
+            
             <form onSubmit={handleApiSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="api-name">Connection Name</Label>

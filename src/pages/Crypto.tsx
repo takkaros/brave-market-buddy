@@ -146,8 +146,12 @@ const Crypto = () => {
   };
 
   useEffect(() => {
-    fetchCryptoData();
-    const interval = setInterval(fetchCryptoData, 5 * 60 * 1000);
+    let mounted = true;
+    
+    if (mounted) fetchCryptoData();
+    const interval = setInterval(() => {
+      if (mounted) fetchCryptoData();
+    }, 5 * 60 * 1000);
 
     // Setup realtime subscription for holdings
     const channel = supabase
@@ -160,12 +164,13 @@ const Crypto = () => {
           table: 'portfolio_holdings'
         },
         () => {
-          fetchCryptoData();
+          if (mounted) fetchCryptoData();
         }
       )
       .subscribe();
 
     return () => {
+      mounted = false;
       clearInterval(interval);
       supabase.removeChannel(channel);
     };

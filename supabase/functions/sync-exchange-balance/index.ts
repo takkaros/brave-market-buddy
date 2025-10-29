@@ -245,14 +245,171 @@ serve(async (req) => {
         console.log('💡 Continuing without locked positions...');
       }
     } else if (exchangeLower === 'kucoin') {
-      console.log('🟢 KUCOIN SYNC - NOT IMPLEMENTED YET');
-      throw new Error('KuCoin synchronization is not yet implemented. We are working on adding support for this exchange.');
+      console.log('🟢 KUCOIN SYNC INITIATED');
+      const apiPassphrase = connection.api_passphrase;
+      
+      if (!apiPassphrase) {
+        throw new Error('KuCoin requires API passphrase');
+      }
+
+      const timestamp = Date.now().toString();
+      const method = 'GET';
+      const endpoint = '/api/v1/accounts';
+      const body = '';
+      
+      // Generate signature
+      const stringToSign = timestamp + method + endpoint + body;
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(apiSecret);
+      const messageData = encoder.encode(stringToSign);
+      
+      const cryptoKey = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+      const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
+      
+      // Encrypt passphrase
+      const passphraseData = encoder.encode(apiPassphrase);
+      const encryptedPassphraseBuffer = await crypto.subtle.sign('HMAC', cryptoKey, passphraseData);
+      const encryptedPassphrase = btoa(String.fromCharCode(...new Uint8Array(encryptedPassphraseBuffer)));
+
+      const kucoinResponse = await fetch(`https://api.kucoin.com${endpoint}`, {
+        headers: {
+          'KC-API-KEY': apiKey,
+          'KC-API-SIGN': signature,
+          'KC-API-TIMESTAMP': timestamp,
+          'KC-API-PASSPHRASE': encryptedPassphrase,
+          'KC-API-KEY-VERSION': '2',
+        }
+      });
+
+      const kucoinData = await kucoinResponse.json();
+
+      if (kucoinData.code === '400005') {
+        throw new Error('❌ Invalid API passphrase');
+      } else if (kucoinData.code === '400006') {
+        throw new Error('❌ Invalid API key');
+      } else if (kucoinData.code === '400007') {
+        throw new Error('❌ Invalid API secret - check signature');
+      } else if (kucoinResponse.status === 401) {
+        throw new Error('❌ Unauthorized - API key may be revoked');
+      } else if (kucoinResponse.status === 403) {
+        throw new Error("❌ Insufficient API permissions - enable 'General' access");
+      } else if (kucoinResponse.status === 429) {
+        throw new Error('⏱️ Rate limit exceeded - wait 1 minute');
+      } else if (!kucoinResponse.ok || kucoinData.code !== '200000') {
+        throw new Error(`KuCoin API error: ${kucoinData.msg || kucoinResponse.statusText}`);
+      }
+
+      const accounts = kucoinData.data || [];
+      console.log(`Found ${accounts.length} KuCoin accounts`);
+
+      for (const account of accounts) {
+        const balance = parseFloat(account.balance);
+        if (balance > 0) {
+          const symbol = account.currency;
+          
+          const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', { body: { symbol } });
+          const price = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
+
+          holdings.push({
+            asset_symbol: symbol,
+            asset_name: symbol,
+            amount: balance,
+            price_usd: price,
+            value_usd: balance * price,
+          });
+        }
+      }
     } else if (exchangeLower === 'coinbase') {
-      console.log('🔵 COINBASE SYNC - NOT IMPLEMENTED YET');
-      throw new Error('Coinbase synchronization is not yet implemented. Coinbase requires OAuth authentication.');
+      console.log('🔵 COINBASE SYNC INITIATED');
+      const coinbaseResponse = await fetch('https://api.coinbase.com/v2/accounts', {
+        headers: {
+          'CB-ACCESS-KEY': apiKey,
+          'CB-ACCESS-SIGN': apiSecret,
+          'CB-VERSION': '2023-01-01',
+        }
+      });
+
+      if (!coinbaseResponse.ok) {
+        throw new Error(`Coinbase API error: ${coinbaseResponse.statusText}`);
+      }
+
+      const coinbaseData = await coinbaseResponse.json();
+      const accounts = coinbaseData.data || [];
+      console.log(`Found ${accounts.length} Coinbase accounts`);
+
+      for (const account of accounts) {
+        const balance = parseFloat(account.balance.amount);
+        if (balance > 0) {
+          const symbol = account.balance.currency;
+          
+          const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', { body: { symbol } });
+          const price = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
+
+          holdings.push({
+            asset_symbol: symbol,
+            asset_name: account.name || symbol,
+            amount: balance,
+            price_usd: price,
+            value_usd: balance * price,
+          });
+        }
+      }
     } else if (exchangeLower === 'kraken') {
-      console.log('🟣 KRAKEN SYNC - NOT IMPLEMENTED YET');
-      throw new Error('Kraken synchronization is not yet implemented. We are working on adding support for this exchange.');
+      console.log('🟣 KRAKEN SYNC INITIATED');
+      const nonce = Date.now().toString();
+      const endpoint = '/0/private/Balance';
+      const postData = `nonce=${nonce}`;
+      
+      const encoder = new TextEncoder();
+      const noncePostData = nonce + postData;
+      const sha256Hash = await crypto.subtle.digest('SHA-256', encoder.encode(noncePostData));
+      const pathHash = encoder.encode(endpoint);
+      
+      const combined = new Uint8Array(pathHash.length + sha256Hash.byteLength);
+      combined.set(pathHash);
+      combined.set(new Uint8Array(sha256Hash), pathHash.length);
+      
+      const keyData = Uint8Array.from(atob(apiSecret), c => c.charCodeAt(0));
+      const cryptoKey = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-512' }, false, ['sign']);
+      const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, combined);
+      const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
+
+      const krakenResponse = await fetch(`https://api.kraken.com${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'API-Key': apiKey,
+          'API-Sign': signature,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: postData
+      });
+
+      const krakenData = await krakenResponse.json();
+      if (krakenData.error && krakenData.error.length > 0) {
+        throw new Error(`Kraken API error: ${krakenData.error.join(', ')}`);
+      }
+
+      const balances = krakenData.result || {};
+      console.log(`Found ${Object.keys(balances).length} Kraken balances`);
+
+      for (const [symbol, balance] of Object.entries(balances)) {
+        const amount = parseFloat(balance as string);
+        if (amount > 0) {
+          const cleanSymbol = symbol.replace(/^X|^Z/, '');
+          
+          const { data: priceData } = await supabase.functions.invoke('fetch-crypto-data', { body: { symbol: cleanSymbol } });
+          const price = priceData?.data?.Data?.Data?.[priceData?.data?.Data?.Data?.length - 1]?.close || 0;
+
+          holdings.push({
+            asset_symbol: cleanSymbol,
+            asset_name: cleanSymbol,
+            amount,
+            price_usd: price,
+            value_usd: amount * price,
+          });
+        }
+      }
     }
 
     // Delete existing holdings for this connection
