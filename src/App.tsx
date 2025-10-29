@@ -20,7 +20,6 @@ import Economics from "./pages/Economics";
 import Orders from "./pages/Orders";
 import Positions from "./pages/Positions";
 import Tools from "./pages/Tools";
-import MacroCycle from "./pages/MacroCycle";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
@@ -47,7 +46,6 @@ const App = () => (
               <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
               <Route path="/positions" element={<ProtectedRoute><Positions /></ProtectedRoute>} />
               <Route path="/tools" element={<ProtectedRoute><Tools /></ProtectedRoute>} />
-              <Route path="/macro" element={<MacroCycle />} />
               <Route path="/settings" element={<EnhancedSettings />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />

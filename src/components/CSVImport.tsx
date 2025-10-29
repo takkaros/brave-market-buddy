@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 
 interface CSVImportProps {
   onImportComplete?: () => void;
@@ -14,11 +13,9 @@ interface CSVImportProps {
 export default function CSVImport({ onImportComplete }: CSVImportProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [importing, setImporting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<any[]>([]);
-  const [importedCount, setImportedCount] = useState(0);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -108,8 +105,6 @@ export default function CSVImport({ onImportComplete }: CSVImportProps) {
 
         if (error) throw error;
 
-        setImportedCount(trades.length);
-        
         toast({
           title: 'Import Successful',
           description: `Imported ${trades.length} transactions`,
@@ -199,24 +194,6 @@ export default function CSVImport({ onImportComplete }: CSVImportProps) {
           <Upload className="w-4 h-4 mr-2" />
           {importing ? 'Importing...' : 'Import Transactions'}
         </Button>
-
-        {importedCount > 0 && (
-          <div className="bg-muted/50 p-4 rounded-lg border border-border">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-500" />
-                <div>
-                  <p className="text-sm font-semibold">Successfully imported {importedCount} transactions</p>
-                  <p className="text-xs text-muted-foreground">View your trades in the Portfolio or Orders page</p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => navigate('/orders')}>
-                <ExternalLink className="w-4 h-4 mr-2" />
-                View Orders
-              </Button>
-            </div>
-          </div>
-        )}
 
         <p className="text-xs text-muted-foreground text-center">
           All data stays local. Transactions are stored in your secure database.

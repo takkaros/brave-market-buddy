@@ -15,8 +15,7 @@ import {
   Settings,
   LogOut,
   User,
-  Globe,
-  Activity
+  Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,7 +28,6 @@ const Navigation = () => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/portfolio', label: 'Portfolio', icon: Wallet },
-    { path: '/macro', label: 'MacroCycle', icon: Activity },
     { path: '/tools', label: 'Tools', icon: Target },
     { path: '/economics', label: 'Economics', icon: Globe },
     { path: '/crypto', label: 'Crypto', icon: Bitcoin },
