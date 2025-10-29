@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import InfoTooltip from '@/components/InfoTooltip';
+import AIProviderKeys from '@/components/AIProviderKeys';
 
 interface APIKey {
   name: string;
@@ -217,6 +218,8 @@ const EnhancedSettings = () => {
           ))}
 
           <Separator />
+
+          <AIProviderKeys />
 
           <Card className="glass-card">
             <CardHeader>

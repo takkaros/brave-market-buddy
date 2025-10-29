@@ -48,17 +48,39 @@ serve(async (req) => {
     console.log('Authenticated request from user:', user.id);
     const { messages, stream = false, model = 'google/gemini-2.5-flash', provider = 'lovable' } = await req.json();
     
-    // Check for API keys
-    const OPENAI_USER_KEY = Deno.env.get('OPENAI_USER_API_KEY');
-    const ANTHROPIC_USER_KEY = Deno.env.get('ANTHROPIC_USER_API_KEY');
-    const GOOGLE_USER_KEY = Deno.env.get('GOOGLE_AI_USER_API_KEY');
+    // Check for user-specific API keys in database first
+    let userApiKey = null;
+    if (provider !== 'lovable') {
+      const { data: keyData } = await supabase
+        .from('user_api_keys')
+        .select('api_key_encrypted')
+        .eq('user_id', user.id)
+        .eq('provider', provider)
+        .single();
+
+      if (keyData?.api_key_encrypted) {
+        // Decrypt the user's API key
+        const { data: decryptedKey } = await supabase
+          .rpc('decrypt_secret', { encrypted_text: keyData.api_key_encrypted });
+        
+        if (decryptedKey) {
+          userApiKey = decryptedKey;
+          console.log(`Using user's own ${provider} API key`);
+        }
+      }
+    }
+    
+    // Fall back to environment secrets if user doesn't have their own key
+    const OPENAI_USER_KEY = userApiKey || Deno.env.get('OPENAI_USER_API_KEY');
+    const ANTHROPIC_USER_KEY = userApiKey || Deno.env.get('ANTHROPIC_USER_API_KEY');
+    const GOOGLE_USER_KEY = userApiKey || Deno.env.get('GOOGLE_AI_USER_API_KEY');
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     let response;
     
     if (provider === 'openai' && OPENAI_USER_KEY) {
       // Use OpenAI API directly
-      console.log('Using OpenAI API with user key');
+      console.log('Using OpenAI API');
       response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -78,7 +100,7 @@ serve(async (req) => {
       });
     } else if (provider === 'anthropic' && ANTHROPIC_USER_KEY) {
       // Use Anthropic API directly
-      console.log('Using Anthropic API with user key');
+      console.log('Using Anthropic API');
       response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -95,7 +117,7 @@ serve(async (req) => {
       });
     } else if (provider === 'google' && GOOGLE_USER_KEY) {
       // Use Google AI API directly
-      console.log('Using Google AI API with user key');
+      console.log('Using Google AI API');
       const promptText = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
       response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model || 'gemini-2.5-flash'}:generateContent?key=${GOOGLE_USER_KEY}`, {
         method: 'POST',
@@ -110,6 +132,9 @@ serve(async (req) => {
           }]
         }),
       });
+    } else if (provider !== 'lovable' && !userApiKey) {
+      // User selected a provider but doesn't have a key configured
+      throw new Error(`No API key configured for ${provider}. Please add your API key in Settings or switch to Lovable AI.`);
     } else {
       // Use Lovable AI Gateway (default)
       console.log('Using Lovable AI Gateway');
@@ -142,7 +167,10 @@ serve(async (req) => {
         throw new Error('Rate limit exceeded. Please try again in a moment.');
       }
       if (response.status === 402) {
-        throw new Error('AI usage limit reached. Please add more credits or use your own API key.');
+        throw new Error('AI usage limit reached. Please add more credits or use your own API key in Settings.');
+      }
+      if (response.status === 401) {
+        throw new Error('Invalid API key. Please check your API key in Settings.');
       }
       const errorText = await response.text();
       console.error(`AI API error (${response.status}):`, errorText);
@@ -157,7 +185,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log(`AI response generated successfully using ${provider}`);
+    console.log(`AI response generated successfully using ${provider}${userApiKey ? ' (user key)' : ' (env key)'}`);
 
     // Parse response based on provider
     let assistantMessage;
@@ -174,6 +202,7 @@ serve(async (req) => {
       success: true, 
       data: provider === 'lovable' || provider === 'openai' ? data : { choices: [{ message: { content: assistantMessage } }] },
       provider,
+      usingUserKey: !!userApiKey,
       timestamp: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
