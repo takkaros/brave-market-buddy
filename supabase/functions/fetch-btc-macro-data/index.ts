@@ -21,43 +21,47 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Fetch BTC price from Binance (free, no API key needed)
-    const binanceResponse = await fetch(
-      'https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT'
+    const CRYPTOCOMPARE_API_KEY = Deno.env.get('CRYPTOCOMPARE_API_KEY');
+    
+    if (!CRYPTOCOMPARE_API_KEY) {
+      throw new Error('CryptoCompare API key not configured');
+    }
+
+    // Fetch current BTC data from CryptoCompare
+    const currentDataResponse = await fetch(
+      `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=BTC&tsyms=USD&api_key=${CRYPTOCOMPARE_API_KEY}`
     );
     
-    if (!binanceResponse.ok) {
-      throw new Error('Failed to fetch Binance data');
+    if (!currentDataResponse.ok) {
+      throw new Error('Failed to fetch current BTC data from CryptoCompare');
     }
     
-    const binanceData = await binanceResponse.json();
-    const price = parseFloat(binanceData.lastPrice);
-    const volume24h = parseFloat(binanceData.quoteVolume);
+    const currentData = await currentDataResponse.json();
+    const btcData = currentData.RAW?.BTC?.USD;
     
-    // Fetch BTC dominance from CoinCap (free, no API key needed)
+    if (!btcData) {
+      throw new Error('Invalid response from CryptoCompare');
+    }
+    
+    const price = btcData.PRICE;
+    const volume24h = btcData.TOTALVOLUME24HTO;
+    const marketCap = btcData.MKTCAP;
+    
+    // Calculate BTC dominance
+    const topCapResponse = await fetch(
+      `https://min-api.cryptocompare.com/data/top/mktcapfull?limit=100&tsym=USD&api_key=${CRYPTOCOMPARE_API_KEY}`
+    );
+    
     let dominance = 57; // Default
-    let marketCap = price * 19800000; // Approximate circulating supply
-    try {
-      const coinCapResponse = await fetch('https://api.coincap.io/v2/assets/bitcoin');
-      if (coinCapResponse.ok) {
-        const coinCapData = await coinCapResponse.json();
-        marketCap = parseFloat(coinCapData.data.marketCapUsd);
-        
-        // Get total market cap for dominance calculation
-        const globalResponse = await fetch('https://api.coincap.io/v2/assets?limit=100');
-        if (globalResponse.ok) {
-          const globalData = await globalResponse.json();
-          const totalMarketCap = globalData.data.reduce((sum: number, asset: any) => 
-            sum + parseFloat(asset.marketCapUsd), 0
-          );
-          dominance = (marketCap / totalMarketCap) * 100;
-        }
-      }
-    } catch (error) {
-      console.log('CoinCap API failed, using defaults:', error);
+    if (topCapResponse.ok) {
+      const topCapData = await topCapResponse.json();
+      const totalMarketCap = topCapData.Data.reduce((sum: number, coin: any) => 
+        sum + (coin.RAW?.USD?.MKTCAP || 0), 0
+      );
+      dominance = (marketCap / totalMarketCap) * 100;
     }
     
-    // Fetch Fear & Greed Index (free)
+    // Fetch Fear & Greed Index (free alternative API)
     let fearGreedIndex = 50; // Default neutral
     try {
       const fearGreedResponse = await fetch(
@@ -71,23 +75,25 @@ Deno.serve(async (req) => {
       console.log('Fear & Greed API failed, using default:', error);
     }
     
-    // Fetch historical data (5 years of monthly data) from Binance
+    // Fetch 5 years of monthly historical data from CryptoCompare
     let historicalPrices: Array<{ time: number; price: number }> = [];
     try {
-      // Get monthly klines for last 5 years (60 months)
-      const endTime = Date.now();
-      const startTime = endTime - (5 * 365 * 24 * 60 * 60 * 1000);
-      
-      const klinesResponse = await fetch(
-        `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1M&startTime=${startTime}&endTime=${endTime}&limit=60`
+      // Get last 60 months (5 years)
+      const historyResponse = await fetch(
+        `https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&limit=1825&api_key=${CRYPTOCOMPARE_API_KEY}`
       );
       
-      if (klinesResponse.ok) {
-        const klines = await klinesResponse.json();
-        historicalPrices = klines.map((k: any) => ({
-          time: k[0], // Open time
-          price: parseFloat(k[4]) // Close price
-        }));
+      if (historyResponse.ok) {
+        const historyData = await historyResponse.json();
+        const dailyData = historyData.Data.Data;
+        
+        // Convert daily to monthly by sampling every 30 days
+        historicalPrices = dailyData
+          .filter((_: any, index: number) => index % 30 === 0)
+          .map((item: any) => ({
+            time: item.time * 1000, // Convert to milliseconds
+            price: item.close
+          }));
       }
     } catch (error) {
       console.log('Failed to fetch historical data:', error);
