@@ -7,11 +7,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Send, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
+
+const AI_MODELS = [
+  { value: 'google/gemini-2.5-flash', label: 'Gemini Flash', description: 'Fast & balanced' },
+  { value: 'google/gemini-2.5-pro', label: 'Gemini Pro', description: 'Best reasoning' },
+  { value: 'openai/gpt-5-mini', label: 'GPT-5 Mini', description: 'Efficient' },
+  { value: 'openai/gpt-5', label: 'GPT-5', description: 'Most powerful' },
+];
 
 const AIChat = () => {
   const navigate = useNavigate();
@@ -19,6 +27,7 @@ const AIChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('google/gemini-2.5-flash');
   const [portfolioStats, setPortfolioStats] = useState<{
     totalValue: number;
     holdingsCount: number;
@@ -87,6 +96,7 @@ const AIChat = () => {
           },
           body: JSON.stringify({
             messages: [...messages, userMessage],
+            model: selectedModel,
           }),
         }
       );
@@ -142,10 +152,29 @@ const AIChat = () => {
 
         <Card className="glass-card h-[calc(100vh-12rem)]">
           <CardHeader className="border-b border-border">
-            <CardTitle>AI Investment Advisor</CardTitle>
-            <p className="text-sm text-muted-foreground mt-2">
-              Ask me anything about your investments, portfolio allocation, or market conditions
-            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <CardTitle>AI Investment Advisor</CardTitle>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Ask me anything about your investments, portfolio allocation, or market conditions
+                </p>
+              </div>
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {AI_MODELS.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex flex-col text-left">
+                        <span className="font-medium text-sm">{model.label}</span>
+                        <span className="text-xs text-muted-foreground">{model.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent className="p-0 h-full flex flex-col">
             <ScrollArea className="flex-1 p-6">

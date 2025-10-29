@@ -46,7 +46,7 @@ serve(async (req) => {
     }
 
     console.log('Authenticated request from user:', user.id);
-    const { messages, stream = false } = await req.json();
+    const { messages, stream = false, model = 'google/gemini-2.5-flash' } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     if (!LOVABLE_API_KEY) {
@@ -60,7 +60,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model,
         messages: [
           { 
             role: 'system', 
