@@ -56,10 +56,26 @@ const Dashboard = () => {
 
       if (error) throw error;
 
+      if (data?.error === 'PAYMENT_REQUIRED') {
+        toast.error('💳 AI Credits Exhausted', {
+          description: 'Please add Lovable AI credits in Settings → Workspace → Usage to continue using AI features.',
+          duration: 10000,
+        });
+        return;
+      }
+
+      if (data?.error === 'RATE_LIMIT') {
+        toast.error('⏱️ Rate Limit Exceeded', {
+          description: 'Too many requests. Please wait a moment and try again.',
+          duration: 5000,
+        });
+        return;
+      }
+
       if (data?.success && data.analysis) {
         setOverallAnalysis(data.analysis);
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Failed to fetch overall market analysis');
     } finally {
       setAnalysisLoading(false);
@@ -83,6 +99,23 @@ const Dashboard = () => {
       });
 
       if (forecastError) throw forecastError;
+
+      if (forecastData?.error === 'PAYMENT_REQUIRED') {
+        toast.error('💳 AI Credits Exhausted', {
+          description: 'Please add Lovable AI credits in Settings → Workspace → Usage to continue using AI features.',
+          duration: 10000,
+        });
+        return;
+      }
+
+      if (forecastData?.error === 'RATE_LIMIT') {
+        toast.error('⏱️ Rate Limit Exceeded', {
+          description: 'Too many requests. Please wait a moment and try again.',
+          duration: 5000,
+        });
+        return;
+      }
+
       if (!forecastData.success) throw new Error(forecastData.error);
 
       setRiskForecast(forecastData.forecast);

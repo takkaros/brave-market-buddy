@@ -124,6 +124,31 @@ Provide a 7-day forecast in the following JSON format (respond ONLY with valid J
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Lovable AI error:', errorData);
+      
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'PAYMENT_REQUIRED',
+          message: 'Lovable AI credits exhausted. Please add credits to continue.',
+          timestamp: new Date().toISOString()
+        }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'RATE_LIMIT',
+          message: 'Rate limit exceeded. Please wait a moment and try again.',
+          timestamp: new Date().toISOString()
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
       throw new Error(errorData.error?.message || 'AI API error');
     }
 
