@@ -65,43 +65,10 @@ const Crypto = () => {
         }
       });
 
-      if (error) {
-        // Check for specific error types
-        if (error.message?.includes('402') || error.message?.includes('PAYMENT_REQUIRED')) {
-          toast({
-            title: "AI Credits Exhausted",
-            description: "Please add credits to your workspace to continue using AI analysis. Go to Settings → Workspace → Usage.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        if (error.message?.includes('429') || error.message?.includes('RATE_LIMITED')) {
-          toast({
-            title: "Rate Limit Reached",
-            description: "Too many requests. Please wait a moment and try again.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        throw error;
-      }
+      if (error) throw error;
 
       if (data?.success && data?.analysis) {
         setAiAnalysis(data.analysis);
-      } else if (data?.error === 'PAYMENT_REQUIRED') {
-        toast({
-          title: "AI Credits Exhausted",
-          description: "Please add credits to your workspace. Go to Settings → Workspace → Usage.",
-          variant: "destructive",
-        });
-      } else if (data?.error === 'RATE_LIMITED') {
-        toast({
-          title: "Rate Limit Reached",
-          description: "Too many requests. Please wait a moment and try again.",
-          variant: "destructive",
-        });
       }
     } catch (error) {
       toast({
@@ -117,36 +84,15 @@ const Crypto = () => {
   const fetchCryptoData = async () => {
     setLoading(true);
     try {
-      // Fetch holdings and aggregate duplicates
+      // Fetch holdings
       const { data: holdingsData, error: holdingsError } = await supabase
         .from('portfolio_holdings')
         .select('*')
-        .in('asset_symbol', ['BTC', 'ETH', 'USDT', 'USDC', 'BNB', 'XRP', 'ADA', 'SOL', 'DOGE', 'DOT']);
+        .in('asset_symbol', ['BTC', 'ETH', 'USDT', 'USDC', 'BNB', 'XRP', 'ADA', 'SOL', 'DOGE', 'DOT'])
+        .order('value_usd', { ascending: false });
 
       if (!holdingsError && holdingsData) {
-        // Aggregate holdings by symbol to prevent duplicates
-        const aggregatedHoldings = holdingsData.reduce((acc: any[], holding: any) => {
-          const existingIndex = acc.findIndex(h => h.asset_symbol === holding.asset_symbol);
-          
-          if (existingIndex >= 0) {
-            // Aggregate amounts and values
-            acc[existingIndex].amount = Number(acc[existingIndex].amount) + Number(holding.amount);
-            acc[existingIndex].value_usd = Number(acc[existingIndex].value_usd || 0) + Number(holding.value_usd || 0);
-            // Keep the most recent price
-            if (new Date(holding.last_updated_at) > new Date(acc[existingIndex].last_updated_at)) {
-              acc[existingIndex].price_usd = holding.price_usd;
-              acc[existingIndex].last_updated_at = holding.last_updated_at;
-            }
-          } else {
-            acc.push({ ...holding });
-          }
-          
-          return acc;
-        }, []);
-        
-        // Sort by value descending
-        aggregatedHoldings.sort((a, b) => (b.value_usd || 0) - (a.value_usd || 0));
-        setCryptoHoldings(aggregatedHoldings);
+        setCryptoHoldings(holdingsData);
       }
 
       const { data: btcData, error: btcError } = await supabase.functions.invoke('fetch-crypto-data', {
@@ -328,34 +274,28 @@ const Crypto = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="space-y-3">
                 {cryptoHoldings.map((holding) => {
                   const totalValue = cryptoHoldings.reduce((sum, h) => sum + (h.value_usd || 0), 0);
                   const allocation = totalValue > 0 ? ((holding.value_usd / totalValue) * 100).toFixed(1) : '0';
                   
                   return (
-                    <div key={holding.id} className="p-3 bg-muted/20 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm">{holding.asset_symbol}</p>
-                          <p className="text-xs text-muted-foreground">{holding.asset_name}</p>
-                        </div>
-                        <Badge variant="outline" className="text-xs">{allocation}%</Badge>
+                    <div key={holding.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div>
+                        <p className="font-semibold">{holding.asset_name || holding.asset_symbol}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {holding.amount} {holding.asset_symbol}
+                        </p>
                       </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Amount:</span>
-                          <span className="font-medium">{Number(holding.amount).toLocaleString(undefined, { maximumFractionDigits: 8 })}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Price:</span>
-                          <span className="font-medium">${(holding.price_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
-                        </div>
-                        <div className="flex justify-between text-sm pt-1 border-t border-border/30">
-                          <span className="text-muted-foreground">Value:</span>
-                          <span className="font-bold">${(holding.value_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        </div>
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          ${(holding.value_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          @ ${(holding.price_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+                        </p>
                       </div>
+                      <Badge variant="outline">{allocation}%</Badge>
                     </div>
                   );
                 })}

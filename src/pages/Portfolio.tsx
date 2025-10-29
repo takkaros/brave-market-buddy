@@ -31,12 +31,9 @@ import AddHoldingDialog from '@/components/AddHoldingDialog';
 import TaxCalculator from '@/components/TaxCalculator';
 import { SyncLogViewer } from '@/components/SyncLogViewer';
 import TradingPanel from '@/components/TradingPanel';
-import RiskManagementPanel from '@/components/RiskManagementPanel';
 import PerformanceDashboard from '@/components/PerformanceDashboard';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import PortfolioBalanceChart from '@/components/PortfolioBalanceChart';
-import PortfolioInsights from '@/components/PortfolioInsights';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', '#6366f1'];
 
@@ -78,7 +75,6 @@ export default function Portfolio() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [holdings, setHoldings] = useState<Holding[]>([]);
-  const [hiddenHoldings, setHiddenHoldings] = useState<Holding[]>([]);
   const [walletConnections, setWalletConnections] = useState<WalletConnection[]>([]);
   const [exchangeConnections, setExchangeConnections] = useState<ExchangeConnection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,7 +105,6 @@ export default function Portfolio() {
         .from('portfolio_holdings')
         .select('*')
         .eq('user_id', user.id)
-        .eq('is_hidden', false)  // Only fetch visible holdings
         .order('value_usd', { ascending: false });
 
       if (error) throw error;
@@ -122,24 +117,6 @@ export default function Portfolio() {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchHiddenHoldings = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('portfolio_holdings')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_hidden', true)
-        .order('value_usd', { ascending: false });
-
-      if (error) throw error;
-      setHiddenHoldings(data || []);
-    } catch (error: any) {
-      console.error('Failed to load hidden holdings:', error);
     }
   };
 
@@ -408,56 +385,6 @@ export default function Portfolio() {
     }
   };
 
-  const hideHolding = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('portfolio_holdings')
-        .update({ is_hidden: true })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Holding Hidden',
-        description: 'This asset will not appear in your portfolio or be updated during syncs',
-      });
-      
-      fetchHoldings();
-      fetchHiddenHoldings();
-    } catch (error: any) {
-      toast({
-        title: 'Hide Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const unhideHolding = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('portfolio_holdings')
-        .update({ is_hidden: false })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Holding Restored',
-        description: 'This asset is now visible in your portfolio',
-      });
-      
-      fetchHoldings();
-      fetchHiddenHoldings();
-    } catch (error: any) {
-      toast({
-        title: 'Restore Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
   const exportToCSV = () => {
     if (holdings.length === 0) {
       toast({
@@ -506,7 +433,6 @@ export default function Portfolio() {
 
   useEffect(() => {
     fetchHoldings();
-    fetchHiddenHoldings();
     fetchWalletConnections();
     fetchExchangeConnections();
 
@@ -575,38 +501,11 @@ export default function Portfolio() {
     .sort((a, b) => (b.value_usd || 0) - (a.value_usd || 0))
     .slice(0, 5);
 
-  // Prepare chart data - group by symbol and handle small holdings
-  const groupedHoldings = holdings.reduce((acc, h) => {
-    const symbol = h.asset_symbol;
-    const value = Number(h.value_usd) || 0;
-    
-    if (!acc[symbol]) {
-      acc[symbol] = { name: symbol, value: 0 };
-    }
-    acc[symbol].value += value;
-    return acc;
-  }, {} as Record<string, { name: string; value: number }>);
-
-  const chartDataRaw = Object.values(groupedHoldings).sort((a, b) => b.value - a.value);
-  
-  // Group holdings < 5% into "Others"
-  const SMALL_THRESHOLD = 0.05; // 5%
-  const largeHoldings: Array<{ name: string; value: number }> = [];
-  let othersValue = 0;
-  
-  chartDataRaw.forEach(item => {
-    const percentage = item.value / totalValue;
-    if (percentage >= SMALL_THRESHOLD) {
-      largeHoldings.push(item);
-    } else {
-      othersValue += item.value;
-    }
-  });
-  
-  const chartData = [...largeHoldings];
-  if (othersValue > 0) {
-    chartData.push({ name: 'Others', value: othersValue });
-  }
+  // Prepare chart data
+  const chartData = holdings.map(h => ({
+    name: h.asset_symbol,
+    value: Number(h.value_usd) || 0,
+  }));
 
   return (
     <ErrorBoundary>
@@ -647,24 +546,6 @@ export default function Portfolio() {
         {syncLogs.length > 0 && (
           <div className="mb-6">
             <SyncLogViewer logs={syncLogs} />
-          </div>
-        )}
-
-        {/* Portfolio Balance Chart */}
-        {holdings.length > 0 && (
-          <div className="mb-6">
-            <PortfolioBalanceChart 
-              holdings={holdings} 
-              totalValue={totalValue}
-              totalCost={totalCost}
-            />
-          </div>
-        )}
-
-        {/* Portfolio Insights - Financial Analysis */}
-        {holdings.length > 0 && (
-          <div className="mb-6">
-            <PortfolioInsights holdings={holdings} totalValue={totalValue} />
           </div>
         )}
 
@@ -805,17 +686,9 @@ export default function Portfolio() {
               <TrendingUp className="w-4 h-4" />
               Trading
             </TabsTrigger>
-            <TabsTrigger value="risk" className="gap-2">
-              <Calculator className="w-4 h-4" />
-              Risk Tools
-            </TabsTrigger>
             <TabsTrigger value="performance" className="gap-2">
               <BarChart3 className="w-4 h-4" />
               Performance
-            </TabsTrigger>
-            <TabsTrigger value="hidden" className="gap-2">
-              <Home className="w-4 h-4" />
-              Hidden ({hiddenHoldings.length})
             </TabsTrigger>
             <TabsTrigger value="connections" className="gap-2">
               <LinkIcon className="w-4 h-4" />
@@ -848,7 +721,6 @@ export default function Portfolio() {
                         key={holding.id} 
                         holding={holding} 
                         onDelete={deleteHolding}
-                        onHide={hideHolding}
                         onUpdate={fetchHoldings}
                         connectionLabel={getConnectionLabel(holding.connection_id)}
                       />
@@ -928,83 +800,9 @@ export default function Portfolio() {
             )}
           </TabsContent>
 
-          {/* Risk Management Tools */}
-          <TabsContent value="risk">
-            <RiskManagementPanel />
-          </TabsContent>
-
           {/* Performance Tab */}
           <TabsContent value="performance">
             <PerformanceDashboard />
-          </TabsContent>
-
-          {/* Hidden Holdings Tab */}
-          <TabsContent value="hidden">
-            <Card>
-              <CardHeader>
-                <CardTitle>Hidden Holdings</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  These holdings are hidden from your portfolio and won't be updated during syncs. 
-                  Click the eye icon to restore them.
-                </p>
-              </CardHeader>
-              <CardContent>
-                {hiddenHoldings.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Home className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                    <p>No hidden holdings</p>
-                    <p className="text-sm mt-2">Use the eye icon (👁️) on any holding to hide it</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {hiddenHoldings.map((holding) => (
-                      <div key={holding.id} className="p-4 bg-muted/30 rounded-lg opacity-60">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-bold text-lg">{holding.asset_symbol}</h3>
-                              <Badge variant="outline" className="text-xs">{holding.asset_type}</Badge>
-                              <Badge variant="secondary" className="text-xs">Hidden</Badge>
-                            </div>
-                            {holding.asset_name && (
-                              <p className="text-sm text-muted-foreground">{holding.asset_name}</p>
-                            )}
-                            <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
-                              <div>
-                                <p className="text-muted-foreground">Amount</p>
-                                <p className="font-medium">{holding.amount.toLocaleString(undefined, { maximumFractionDigits: 8 })}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Value</p>
-                                <p className="font-medium">${(holding.value_usd || 0).toFixed(2)}</p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => unhideHolding(holding.id)}
-                              className="h-8"
-                            >
-                              Restore
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => deleteHolding(holding.id)}
-                              className="h-8 w-8 p-0 text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* Tax Helper */}
@@ -1037,15 +835,13 @@ export default function Portfolio() {
                             <Wallet className="w-5 h-5" />
                             <div>
                               <p className="font-semibold">{connection.name}</p>
-                              <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                <Badge variant="outline">{connection.blockchain}</Badge>
-                                <span>
-                                  {connection.wallet_address.length > 20 
-                                    ? `${connection.wallet_address.slice(0, 12)}...${connection.wallet_address.slice(-10)}`
-                                    : connection.wallet_address
-                                  }
-                                </span>
-                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                <Badge variant="outline" className="mr-2">{connection.blockchain}</Badge>
+                                {connection.wallet_address.length > 20 
+                                  ? `${connection.wallet_address.slice(0, 12)}...${connection.wallet_address.slice(-10)}`
+                                  : connection.wallet_address
+                                }
+                              </p>
                               {connection.wallet_address.startsWith('xpub') && connection.wallet_address.length < 111 && (
                                 <div className="flex items-center gap-2 mt-2">
                                   <Badge variant="destructive" className="text-xs">

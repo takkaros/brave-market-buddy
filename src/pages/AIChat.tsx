@@ -4,47 +4,22 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Send, Loader2, Settings } from 'lucide-react';
+import { ArrowLeft, Send, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
-const AI_PROVIDERS = [
-  { value: 'lovable', label: 'Lovable AI', description: 'Uses your Lovable credits', requiresKey: false },
-  { value: 'openai', label: 'OpenAI', description: 'Use your OpenAI API key', requiresKey: true },
-  { value: 'anthropic', label: 'Anthropic (Claude)', description: 'Use your Anthropic API key', requiresKey: true },
-  { value: 'google', label: 'Google AI', description: 'Use your Google AI API key', requiresKey: true },
+const AI_MODELS = [
+  { value: 'google/gemini-2.5-flash', label: 'Gemini Flash', description: 'Fast & balanced' },
+  { value: 'google/gemini-2.5-pro', label: 'Gemini Pro', description: 'Best reasoning' },
+  { value: 'openai/gpt-5-mini', label: 'GPT-5 Mini', description: 'Efficient' },
+  { value: 'openai/gpt-5', label: 'GPT-5', description: 'Most powerful' },
 ];
-
-const AI_MODELS = {
-  lovable: [
-    { value: 'google/gemini-2.5-flash-lite', label: '⚡ Gemini Flash Lite', description: 'Cheapest - Best for free tier' },
-    { value: 'google/gemini-2.5-flash', label: 'Gemini Flash', description: 'Fast & balanced' },
-    { value: 'openai/gpt-5-nano', label: '💨 GPT-5 Nano', description: 'Super fast & cheap' },
-    { value: 'openai/gpt-5-mini', label: 'GPT-5 Mini', description: 'Efficient' },
-    { value: 'google/gemini-2.5-pro', label: 'Gemini Pro', description: 'Premium reasoning' },
-    { value: 'openai/gpt-5', label: 'GPT-5', description: 'Premium power' },
-  ],
-  openai: [
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'Fast & cost-effective' },
-    { value: 'gpt-4o', label: 'GPT-4o', description: 'Powerful & versatile' },
-  ],
-  anthropic: [
-    { value: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5', description: 'Most capable model' },
-    { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1', description: 'Highly intelligent' },
-  ],
-  google: [
-    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', description: 'Fast & efficient' },
-    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', description: 'Most capable' },
-  ],
-};
 
 const AIChat = () => {
   const navigate = useNavigate();
@@ -52,9 +27,7 @@ const AIChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState('lovable');
-  const [selectedModel, setSelectedModel] = useState('google/gemini-2.5-flash-lite');
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('google/gemini-2.5-flash');
   const [portfolioStats, setPortfolioStats] = useState<{
     totalValue: number;
     holdingsCount: number;
@@ -124,7 +97,6 @@ const AIChat = () => {
           body: JSON.stringify({
             messages: [...messages, userMessage],
             model: selectedModel,
-            provider: selectedProvider,
           }),
         }
       );
@@ -187,87 +159,21 @@ const AIChat = () => {
                   Ask me anything about your investments, portfolio allocation, or market conditions
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="flex flex-col items-end gap-2">
-                  <div className="flex gap-2">
-                    <Select value={selectedProvider} onValueChange={(value) => {
-                      setSelectedProvider(value);
-                      setSelectedModel(AI_MODELS[value as keyof typeof AI_MODELS][0].value);
-                    }}>
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AI_PROVIDERS.map((provider) => (
-                          <SelectItem key={provider.value} value={provider.value}>
-                            <div className="flex flex-col text-left">
-                              <span className="font-medium text-sm">{provider.label}</span>
-                              <span className="text-xs text-muted-foreground">{provider.description}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    
-                    <Select value={selectedModel} onValueChange={setSelectedModel}>
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AI_MODELS[selectedProvider as keyof typeof AI_MODELS].map((model) => (
-                          <SelectItem key={model.value} value={model.value}>
-                            <div className="flex flex-col text-left">
-                              <span className="font-medium text-sm">{model.label}</span>
-                              <span className="text-xs text-muted-foreground">{model.description}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {selectedProvider === 'lovable' ? 'Free tier included • ⚡💨 = Most economical' : 'Using your own API key'}
-                  </p>
-                </div>
-                
-                <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <Settings className="w-4 h-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>AI Provider Settings</DialogTitle>
-                      <DialogDescription>
-                        Configure your own API keys to use external AI providers without Lovable credits.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label>Selected Provider: <span className="font-bold">{AI_PROVIDERS.find(p => p.value === selectedProvider)?.label}</span></Label>
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {AI_MODELS.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex flex-col text-left">
+                        <span className="font-medium text-sm">{model.label}</span>
+                        <span className="text-xs text-muted-foreground">{model.description}</span>
                       </div>
-                      <div className="p-4 bg-muted rounded-lg space-y-2">
-                        <p className="text-sm font-medium">To add your own API keys:</p>
-                        <ol className="text-sm space-y-1 list-decimal list-inside">
-                          <li>Go to Settings → Secrets in your Lovable project</li>
-                          <li>Add one or more of these secrets:
-                            <ul className="ml-6 mt-1 space-y-1 list-disc list-inside">
-                              <li><code className="text-xs bg-background px-1 py-0.5 rounded">OPENAI_USER_API_KEY</code> - For OpenAI</li>
-                              <li><code className="text-xs bg-background px-1 py-0.5 rounded">ANTHROPIC_USER_API_KEY</code> - For Claude</li>
-                              <li><code className="text-xs bg-background px-1 py-0.5 rounded">GOOGLE_AI_USER_API_KEY</code> - For Google AI</li>
-                            </ul>
-                          </li>
-                          <li>Select the provider above and start chatting!</li>
-                        </ol>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Get API keys from: <a href="https://platform.openai.com" target="_blank" rel="noopener" className="underline">OpenAI</a>, <a href="https://console.anthropic.com" target="_blank" rel="noopener" className="underline">Anthropic</a>, or <a href="https://ai.google.dev" target="_blank" rel="noopener" className="underline">Google AI</a>
-                      </p>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardHeader>
           <CardContent className="p-0 h-full flex flex-col">

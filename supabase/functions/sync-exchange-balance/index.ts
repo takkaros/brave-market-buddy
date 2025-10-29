@@ -123,16 +123,8 @@ serve(async (req) => {
         
         console.log('✅ Created', holdings.length, 'holdings from spot balances');
       } else {
-        const errorData = await binanceResponse.json();
-        console.error('❌ Binance Spot API ERROR:', errorData);
-        
-        // Check for authentication errors
-        if (errorData.code === -2015 || errorData.code === -2008) {
-          throw new Error(`❌ Invalid Binance API credentials: ${errorData.msg}`);
-        }
-        
-        // For other errors, log but continue
-        console.log('⚠️ Continuing without spot balances...');
+        const errorText = await binanceResponse.text();
+        console.error('❌ Binance Spot API ERROR:', errorText);
       }
 
       // 2. FETCH SIMPLE EARN FLEXIBLE POSITIONS
@@ -420,18 +412,14 @@ serve(async (req) => {
       }
     }
 
-    // Delete existing NON-HIDDEN holdings for this connection
-    // This preserves hidden holdings during sync
+    // Delete existing holdings for this connection
     const { error: deleteError } = await supabase
       .from('portfolio_holdings')
       .delete()
-      .eq('connection_id', connectionId)
-      .eq('is_hidden', false);  // Only delete visible holdings
+      .eq('connection_id', connectionId);
     
     if (deleteError) {
       console.error('❌ Failed to delete old holdings:', deleteError);
-    } else {
-      console.log('✅ Deleted old visible holdings (preserved hidden ones)');
     }
 
     // Insert new holdings

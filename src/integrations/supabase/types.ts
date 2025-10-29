@@ -363,7 +363,6 @@ export type Database = {
           connection_id: string | null
           created_at: string
           id: string
-          is_hidden: boolean | null
           last_updated_at: string
           notes: string | null
           price_usd: number | null
@@ -380,7 +379,6 @@ export type Database = {
           connection_id?: string | null
           created_at?: string
           id?: string
-          is_hidden?: boolean | null
           last_updated_at?: string
           notes?: string | null
           price_usd?: number | null
@@ -397,7 +395,6 @@ export type Database = {
           connection_id?: string | null
           created_at?: string
           id?: string
-          is_hidden?: boolean | null
           last_updated_at?: string
           notes?: string | null
           price_usd?: number | null
@@ -744,33 +741,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      user_api_keys: {
-        Row: {
-          api_key_encrypted: string
-          created_at: string | null
-          id: string
-          provider: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          api_key_encrypted: string
-          created_at?: string | null
-          id?: string
-          provider: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          api_key_encrypted?: string
-          created_at?: string | null
-          id?: string
-          provider?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
       }
     }
     Views: {
