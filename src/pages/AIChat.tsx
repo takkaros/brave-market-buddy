@@ -93,7 +93,16 @@ const AIChat = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to get AI response');
+        
+        // Handle specific error cases
+        if (response.status === 402) {
+          throw new Error('💳 AI credits exhausted. Please add credits in Settings → Workspace → Usage to continue using AI features.');
+        }
+        if (response.status === 429) {
+          throw new Error('⏱️ Rate limit exceeded. Please wait a moment and try again.');
+        }
+        
+        throw new Error(errorData.error || errorData.message || 'Failed to get AI response');
       }
 
       const data = await response.json();
@@ -108,9 +117,10 @@ const AIChat = () => {
         throw new Error('Invalid response format');
       }
     } catch (error) {
+      console.error('AI Chat error:', error);
       const errorMessage: Message = {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again later.',
+        content: error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again later.',
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
