@@ -65,10 +65,43 @@ const Crypto = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check for specific error types
+        if (error.message?.includes('402') || error.message?.includes('PAYMENT_REQUIRED')) {
+          toast({
+            title: "AI Credits Exhausted",
+            description: "Please add credits to your workspace to continue using AI analysis. Go to Settings → Workspace → Usage.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (error.message?.includes('429') || error.message?.includes('RATE_LIMITED')) {
+          toast({
+            title: "Rate Limit Reached",
+            description: "Too many requests. Please wait a moment and try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        throw error;
+      }
 
       if (data?.success && data?.analysis) {
         setAiAnalysis(data.analysis);
+      } else if (data?.error === 'PAYMENT_REQUIRED') {
+        toast({
+          title: "AI Credits Exhausted",
+          description: "Please add credits to your workspace. Go to Settings → Workspace → Usage.",
+          variant: "destructive",
+        });
+      } else if (data?.error === 'RATE_LIMITED') {
+        toast({
+          title: "Rate Limit Reached",
+          description: "Too many requests. Please wait a moment and try again.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       toast({
