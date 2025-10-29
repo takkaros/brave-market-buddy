@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +14,9 @@ serve(async (req) => {
   try {
     const { symbol = 'SPY', timeframe = '1M' } = await req.json();
     const ALPHA_VANTAGE_KEY = Deno.env.get('ALPHA_VANTAGE_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     if (!ALPHA_VANTAGE_KEY) {
       throw new Error('Alpha Vantage API key not configured');
@@ -39,7 +43,20 @@ serve(async (req) => {
 
     console.log('Successfully fetched stock data for:', symbol);
 
-    return new Response(JSON.stringify({ 
+    // Store latest price in database
+    const timeSeries = data['Time Series (Daily)'];
+    if (timeSeries) {
+      const latestDate = Object.keys(timeSeries)[0];
+      const latestData = timeSeries[latestDate];
+      await supabase.from('stock_prices').insert({
+        symbol,
+        price: parseFloat(latestData['4. close']),
+        volume: parseFloat(latestData['5. volume']),
+        timestamp: new Date(latestDate).toISOString(),
+      });
+    }
+
+    return new Response(JSON.stringify({
       success: true, 
       data,
       timestamp: new Date().toISOString()

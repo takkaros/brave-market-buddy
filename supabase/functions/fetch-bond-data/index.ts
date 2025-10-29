@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +14,9 @@ serve(async (req) => {
   try {
     const { timeframe = '1M' } = await req.json();
     const FRED_KEY = Deno.env.get('FRED_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     if (!FRED_KEY) {
       throw new Error('FRED API key not configured');
@@ -50,7 +54,30 @@ serve(async (req) => {
 
     console.log('Successfully fetched bond data');
 
-    return new Response(JSON.stringify({ 
+    // Store latest bond yields in database
+    if (yield10Data?.observations && yield10Data.observations.length > 0) {
+      const latest10Y = yield10Data.observations[0];
+      if (latest10Y.value !== '.') {
+        await supabase.from('bond_data').insert({
+          bond_type: 'US_10Y',
+          yield: parseFloat(latest10Y.value),
+          timestamp: new Date(latest10Y.date).toISOString(),
+        });
+      }
+    }
+    
+    if (yield2Data?.observations && yield2Data.observations.length > 0) {
+      const latest2Y = yield2Data.observations[0];
+      if (latest2Y.value !== '.') {
+        await supabase.from('bond_data').insert({
+          bond_type: 'US_2Y',
+          yield: parseFloat(latest2Y.value),
+          timestamp: new Date(latest2Y.date).toISOString(),
+        });
+      }
+    }
+
+    return new Response(JSON.stringify({
       success: true, 
       yield10: yield10Data,
       yield2: yield2Data,

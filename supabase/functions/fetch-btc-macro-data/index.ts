@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,6 +20,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
     // Fetch BTC price and market data
     const coinGeckoResponse = await fetch(
       'https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&community_data=false&developer_data=false'
@@ -64,6 +68,22 @@ Deno.serve(async (req) => {
       fearGreedIndex: fearGreedIndex,
       timestamp: new Date().toISOString(),
     };
+
+    // Store in database
+    const { error: dbError } = await supabase
+      .from('btc_macro_data')
+      .insert({
+        price: macroData.price,
+        dominance: macroData.dominance,
+        market_cap: macroData.marketCap,
+        volume_24h: macroData.volume24h,
+        fear_greed_index: macroData.fearGreedIndex,
+        timestamp: macroData.timestamp,
+      });
+
+    if (dbError) {
+      console.error('Database insert error:', dbError);
+    }
 
     return new Response(JSON.stringify(macroData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

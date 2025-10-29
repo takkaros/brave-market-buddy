@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,6 +65,9 @@ serve(async (req) => {
   try {
     const { symbol = 'BTC', timeframe = '1M' } = await req.json();
     const CRYPTOCOMPARE_KEY = Deno.env.get('CRYPTOCOMPARE_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     if (!CRYPTOCOMPARE_KEY) {
       throw new Error('CryptoCompare API key not configured');
@@ -98,7 +102,18 @@ serve(async (req) => {
       fallback = true;
     }
 
-    return new Response(JSON.stringify({ 
+    // Store latest price in database
+    if (!fallback && data?.Data?.Data && data.Data.Data.length > 0) {
+      const latestData = data.Data.Data[data.Data.Data.length - 1];
+      await supabase.from('crypto_prices').insert({
+        symbol,
+        price: latestData.close,
+        volume_24h: latestData.volumeto,
+        timestamp: new Date(latestData.time * 1000).toISOString(),
+      });
+    }
+
+    return new Response(JSON.stringify({
       success: true, 
       data,
       fallback,
