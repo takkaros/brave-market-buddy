@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { generateMockData } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -13,7 +12,7 @@ import { toast } from 'sonner';
 
 const Bonds = () => {
   const [timeframe, setTimeframe] = useState('1M');
-  const mockData = generateMockData('bottom');
+  const [chartData, setChartData] = useState<any[]>([]);
   const [yield10Y, setYield10Y] = useState(4.5);
   const [yield2Y, setYield2Y] = useState(4.8);
   const [lastUpdated, setLastUpdated] = useState<string>('');

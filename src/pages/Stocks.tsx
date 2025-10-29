@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { generateMockData } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -12,7 +11,7 @@ import { RefreshCw, TrendingUp, Activity, Globe2 } from 'lucide-react';
 const Stocks = () => {
   const [timeframe, setTimeframe] = useState('1M');
   const [loading, setLoading] = useState(false);
-  const mockData = generateMockData('bottom');
+  const [chartData, setChartData] = useState<any[]>([]);
   
   // Stock market metrics - US
   const sp500 = 4200;
@@ -25,9 +24,12 @@ const Stocks = () => {
   const ftse100 = 7450; // UK
   const stoxx600 = 460; // Europe-wide
   
-  const sp500PE = mockData.sp500PE;
-  const vix = mockData.vix;
+  const sp500PE = 18.5; // S&P 500 P/E ratio
+  const vix = 22; // Volatility Index
   const earnings = 225; // S&P 500 trailing earnings
+  const putCallRatio = 1.3; // Options positioning
+  const advanceDecline = -500; // Market breadth
+  const marginDebt = 750; // Investor borrowing ($B)
   
   // Generate price action data based on timeframe
   const getDataPoints = () => {
@@ -494,7 +496,7 @@ const Stocks = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{mockData.putCallRatio}</p>
+              <p className="text-2xl font-bold">{putCallRatio}</p>
               <p className="text-sm text-risk-low mt-1">Defensive (bullish contrarian)</p>
             </CardContent>
           </Card>
@@ -507,7 +509,7 @@ const Stocks = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{mockData.advanceDecline}</p>
+              <p className="text-2xl font-bold">{advanceDecline}</p>
               <p className="text-sm text-risk-elevated mt-1">Weak breadth</p>
             </CardContent>
           </Card>
@@ -520,7 +522,7 @@ const Stocks = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">${mockData.marginDebt}B</p>
+              <p className="text-2xl font-bold">${marginDebt}B</p>
               <p className="text-sm text-risk-low mt-1">Down from peak (healthy)</p>
             </CardContent>
           </Card>

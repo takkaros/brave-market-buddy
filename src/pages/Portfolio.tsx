@@ -785,26 +785,24 @@ export default function Portfolio() {
 
           {/* Trading Tab */}
           <TabsContent value="trading">
-            <Card>
-              <CardHeader>
-                <CardTitle>Trading Panel</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Place orders from individual asset pages or use the trading interface.</p>
-              </CardContent>
-            </Card>
+            {topAssets.length > 0 ? (
+              <TradingPanel 
+                symbol={topAssets[0].asset_symbol}
+                currentPrice={topAssets[0].price_usd}
+                assetType={topAssets[0].asset_type as 'crypto' | 'stock' | 'bond' | 'metal' | 'other'}
+              />
+            ) : (
+              <Card>
+                <CardContent className="p-6">
+                  <p className="text-muted-foreground">Add holdings to start trading</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Performance Tab */}
           <TabsContent value="performance">
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance Metrics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">View comprehensive performance analytics once you have trading history.</p>
-              </CardContent>
-            </Card>
+            <PerformanceDashboard />
           </TabsContent>
 
           {/* Tax Helper */}

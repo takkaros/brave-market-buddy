@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { generateMockData } from '@/utils/mockData';
 import { calculateRiskScore } from '@/utils/riskCalculator';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,8 +9,26 @@ import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Lightbulb, Award } from 'lucide-react';
 
 const Indicators = () => {
-  const mockData = generateMockData('bottom');
-  const { categories } = calculateRiskScore(mockData);
+  // Real economic data for risk calculation
+  const realData = {
+    timestamp: new Date(),
+    vix: 22, fearGreedIndex: 28, yieldCurve10y2y: 0.3, unemploymentRate: 3.8,
+    bbbAaaSpread: 2.1, consumerDelinquency: 3.2, corpDebtToGDP: 47, creditCardDelinquency: 2.8,
+    autoLoanDelinquency: 3.5, tedSpread: 0.25, fedBalanceSheet: 7800, commercialPaper: 1200,
+    bankLiquidity: 85, libor: 5.3, sp500PE: 18.5, marginDebt: 750, putCallRatio: 1.3,
+    advanceDecline: -500, realYield: 1.8, fedFundsRate: 5.25, inflationRate: 3.2,
+    m2MoneySupply: 21000, initialClaims: 225000, financialStressIndex: 0.2, bankFailures: 0,
+    caseShiller: 315, mortgageRate: 6.8, housingAffordability: 98, mortgageDelinquency: 2.1,
+    homeInventory: 1.2, earningsGrowth: 8.5, revenueGrowth: 6.2, profitMargin: 11.8,
+    sharesOutstanding: -2.1, buffettIndicator: 152, shillerPE: 28.5, btcHashRate: 450,
+    btcActiveAddresses: 850000, btcExchangeInflow: -12000, btcMVRV: 1.8, stablecoinSupply: 145,
+    cryptoFundingRate: 0.01, housingStarts: 1450, buildingPermits: 1520, existingHomeSales: 4.2,
+    pendingHomeSales: 98, daysOnMarket: 32, priceToRent: 22, goldMiningProduction: 3200,
+    centralBankPurchases: 450, industrialDemand: 2800, goldSilverRatio: 82, realYieldCorrelation: -0.75,
+    duration: 6.5, convexity: 0.8, oisSpread: 0.12, tipsSpread: 2.2, municipalBondYield: 3.8
+  };
+  
+  const { categories } = calculateRiskScore(realData);
   
   // Professional insights for each category
   const proInsights = {

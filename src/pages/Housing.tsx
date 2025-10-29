@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { generateMockData } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -13,7 +12,7 @@ import { toast } from 'sonner';
 
 const Housing = () => {
   const [timeframe, setTimeframe] = useState('1Y');
-  const mockData = generateMockData('bottom');
+  const [chartData, setChartData] = useState<any[]>([]);
   
   // Cyprus housing-specific metrics
   const [houseIndex, setHouseIndex] = useState(185);

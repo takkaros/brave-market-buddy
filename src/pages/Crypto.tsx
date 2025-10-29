@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { generateMockData } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,12 +37,12 @@ const Crypto = () => {
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [cryptoHoldings, setCryptoHoldings] = useState<any[]>([]);
-  const mockData = generateMockData('bottom');
+  const [chartData, setChartData] = useState<any[]>([]);
   const { toast } = useToast();
   
   // Crypto-specific metrics
   const btcDominance = 52;
-  const fearGreed = mockData.fearGreedIndex;
+  const fearGreed = 28; // Fear & Greed Index
   const cryptoMarketCap = 1.65; // Trillion
 
   const fetchAIAnalysis = async (currentBtcPrice: number, currentEthPrice: number, holdings: any[]) => {
