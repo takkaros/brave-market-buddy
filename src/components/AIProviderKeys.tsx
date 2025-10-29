@@ -83,13 +83,39 @@ export default function AIProviderKeys() {
   };
 
   const saveKey = async (provider: 'openai' | 'anthropic' | 'google') => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please sign in to save your API keys',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     const keyValue = keys[provider].value.trim();
+    
+    // Validate API key format
+    const providerConfig = AI_PROVIDERS.find(p => p.provider === provider);
     if (!keyValue) {
       toast({
-        title: 'Error',
-        description: 'Please enter an API key',
+        title: 'Missing API Key',
+        description: 'Please enter an API key before saving',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Basic format validation
+    const validPrefixes: Record<string, string> = {
+      openai: 'sk-',
+      anthropic: 'sk-ant-',
+      google: 'AIza'
+    };
+
+    if (!keyValue.startsWith(validPrefixes[provider])) {
+      toast({
+        title: 'Invalid API Key Format',
+        description: `${providerConfig?.name} API keys should start with "${validPrefixes[provider]}"`,
         variant: 'destructive',
       });
       return;
@@ -101,7 +127,10 @@ export default function AIProviderKeys() {
       const { data: encryptedData, error: encryptError } = await supabase
         .rpc('encrypt_secret', { secret_text: keyValue });
 
-      if (encryptError) throw encryptError;
+      if (encryptError) {
+        console.error('Encryption error:', encryptError);
+        throw new Error('Failed to encrypt API key. Please try again.');
+      }
 
       // Upsert the encrypted key
       const { error: upsertError } = await supabase
@@ -115,7 +144,10 @@ export default function AIProviderKeys() {
           onConflict: 'user_id,provider'
         });
 
-      if (upsertError) throw upsertError;
+      if (upsertError) {
+        console.error('Database error:', upsertError);
+        throw new Error('Failed to save API key to database');
+      }
 
       setKeys(prev => ({
         ...prev,
@@ -123,13 +155,13 @@ export default function AIProviderKeys() {
       }));
 
       toast({
-        title: 'Success',
-        description: `${AI_PROVIDERS.find(p => p.provider === provider)?.name} API key saved securely`,
+        title: '✓ API Key Saved',
+        description: `Your ${providerConfig?.name} key is now securely stored and ready to use`,
       });
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to save API key',
+        title: 'Save Failed',
+        description: error.message || 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -148,7 +180,10 @@ export default function AIProviderKeys() {
         .eq('user_id', user.id)
         .eq('provider', provider);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw new Error('Failed to remove API key');
+      }
 
       setKeys(prev => ({
         ...prev,
@@ -156,13 +191,13 @@ export default function AIProviderKeys() {
       }));
 
       toast({
-        title: 'Success',
-        description: `${AI_PROVIDERS.find(p => p.provider === provider)?.name} API key removed`,
+        title: '✓ API Key Removed',
+        description: `${AI_PROVIDERS.find(p => p.provider === provider)?.name} key has been securely deleted`,
       });
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to delete API key',
+        title: 'Removal Failed',
+        description: error.message || 'Could not remove API key. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -186,9 +221,9 @@ export default function AIProviderKeys() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Alert>
-          <AlertDescription>
-            <strong>Secure Storage:</strong> Your API keys are encrypted before being stored in the database. They're never exposed to the client and can only be used by your backend functions.
+        <Alert className="border-primary/20 bg-primary/5">
+          <AlertDescription className="text-sm">
+            <strong className="text-primary">🔒 Bank-Level Security:</strong> Your API keys are encrypted using military-grade encryption before storage. They're never visible to anyone and can only be accessed by your secure backend functions.
           </AlertDescription>
         </Alert>
 
