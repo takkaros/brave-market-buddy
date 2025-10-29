@@ -767,10 +767,15 @@ export default function Portfolio() {
                               <p className="text-sm text-muted-foreground">
                                 <Badge variant="outline" className="mr-2">{connection.blockchain}</Badge>
                                 {connection.wallet_address.length > 20 
-                                  ? `${connection.wallet_address.slice(0, 10)}...${connection.wallet_address.slice(-8)}`
+                                  ? `${connection.wallet_address.slice(0, 12)}...${connection.wallet_address.slice(-10)}`
                                   : connection.wallet_address
                                 }
                               </p>
+                              {connection.wallet_address.startsWith('xpub') && connection.wallet_address.length < 111 && (
+                                <p className="text-xs text-destructive mt-1">
+                                  ⚠️ Address appears truncated - please re-add
+                                </p>
+                              )}
                               {connection.last_synced_at && (
                                 <p className="text-xs text-muted-foreground mt-1">
                                   Last synced: {new Date(connection.last_synced_at).toLocaleString()}

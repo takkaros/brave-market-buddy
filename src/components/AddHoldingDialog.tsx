@@ -41,7 +41,19 @@ const apiConnectionSchema = z.object({
 const walletSchema = z.object({
   name: z.string().min(1, 'Wallet name is required'),
   blockchain: z.string().min(1, 'Blockchain is required'),
-  wallet_address: z.string().min(1, 'Wallet address is required'),
+  wallet_address: z.string().min(1, 'Wallet address is required')
+    .refine((addr) => {
+      const cleaned = addr.trim();
+      // Bitcoin regular address validation
+      if (cleaned.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/)) return true;
+      // Bitcoin xpub/ypub/zpub validation (should be 111 chars)
+      if (cleaned.match(/^(xpub|ypub|zpub)[a-zA-Z0-9]{107,111}$/)) return true;
+      // Ethereum address validation
+      if (cleaned.match(/^0x[a-fA-F0-9]{40}$/)) return true;
+      // Solana address validation
+      if (cleaned.match(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/)) return true;
+      return true; // Allow other formats for now
+    }, 'Invalid wallet address format'),
 });
 
 interface Props {
@@ -787,11 +799,14 @@ export default function AddHoldingDialog({ onAdded }: Props) {
                 <Label htmlFor="wallet-address">Wallet Address</Label>
                 <Input
                   id="wallet-address"
-                  placeholder="Enter wallet address"
+                  placeholder="Enter wallet address (e.g., xpub... or 0x...)"
                   value={walletForm.wallet_address}
                   onChange={(e) => setWalletForm({ ...walletForm, wallet_address: e.target.value })}
                   required
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Paste your full wallet address or xpub/ypub/zpub key
+                </p>
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>

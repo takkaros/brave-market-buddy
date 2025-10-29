@@ -84,6 +84,14 @@ serve(async (req) => {
     const blockchainLower = blockchain.toLowerCase();
     console.log('🔍 Blockchain (normalized):', blockchainLower);
 
+    // Validate xpub format for Bitcoin before making API call
+    if (blockchainLower === 'bitcoin' && (walletAddress.startsWith('xpub') || walletAddress.startsWith('ypub') || walletAddress.startsWith('zpub'))) {
+      if (walletAddress.length < 111) {
+        console.error('❌ Invalid xpub: too short (', walletAddress.length, 'chars, need 111)');
+        throw new Error(`Invalid Bitcoin xpub address. The address appears to be truncated. Please delete this connection and re-add it with the complete xpub key (111 characters).`);
+      }
+    }
+
     // Fetch balance based on blockchain
     if (blockchainLower === 'bitcoin') {
       console.log('🟠 BITCOIN SYNC INITIATED');
