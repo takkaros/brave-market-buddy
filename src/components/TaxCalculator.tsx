@@ -50,13 +50,15 @@ export default function TaxCalculator({ holdings }: TaxCalculatorProps) {
 
       const netGains = totalGains - totalLosses;
       
-      // Cyprus tax rates:
-      // - Corporate tax: 12.5%
-      // - Personal income tax: progressive (0-35%)
-      // - Capital gains on immovable property: 20%
-      // - Securities/crypto: Generally exempt but treated as income if trading
-      // Using 12.5% as base rate for crypto capital gains
-      const taxOwed = Math.max(0, netGains * 0.125);
+      // Cyprus crypto tax (2025):
+      // - NO Capital Gains Tax on crypto for individuals (Cyprus has no CGT on financial assets)
+      // - Income tax applies ONLY if crypto trading is considered a business activity
+      // - For casual investors: 0% tax on crypto gains
+      // - For professional traders: Income tax 0-35% progressive
+      // - Companies: 12.5% corporate tax
+      // Default assumption: Casual investor = 0% tax
+      // If trading as business, personal income tax applies on net gains
+      const taxOwed = 0; // Cyprus has no CGT for individuals on crypto
 
       const summary = {
         totalGains,
@@ -100,24 +102,44 @@ export default function TaxCalculator({ holdings }: TaxCalculatorProps) {
     if (!taxSummary) return;
 
     const report = `
-Cyprus Tax Report - ${taxSummary.taxYear}
-========================================
+Cyprus Crypto Tax Report - ${taxSummary.taxYear}
+================================================
 
 Total Capital Gains: €${taxSummary.totalGains.toFixed(2)}
 Total Capital Losses: €${taxSummary.totalLosses.toFixed(2)}
 Net Capital Gains: €${taxSummary.netGains.toFixed(2)}
 
-Estimated Tax Owed (12.5% rate): €${taxSummary.taxOwed.toFixed(2)}
+Estimated Tax Owed: €${taxSummary.taxOwed.toFixed(2)}
 
-========================================
-Note: This is an estimate. Consult a Cyprus tax advisor for accurate filing.
-Cyprus tax regulations may vary based on your residency status and trading frequency.
+================================================
+TAX TREATMENT FOR CASUAL INVESTORS (2025):
+✓ NO Capital Gains Tax on cryptocurrency
+✓ Cyprus does not tax capital gains on financial assets
+✓ Only income tax applies if trading is a business activity
 
-Relevant Cyprus Tax Info:
-- Corporate Tax Rate: 12.5%
-- Personal Income Tax: Progressive (0-35%)
+IMPORTANT CONSIDERATIONS:
+- Casual/personal investors: 0% tax on crypto gains
+- Professional traders (business activity): Income tax 0-35% applies
+- Corporate entities: 12.5% corporate tax rate
+- Non-domiciled residents: No SDC on dividends for 17 years
+- No VAT on cryptocurrency transactions
 - Tax Year: January 1 - December 31
-- Filing Deadline: Usually by March 31
+- Personal tax filing deadline: July 31 following tax year
+- Corporate tax filing: March 31 (12 months after year-end)
+
+RECORD KEEPING REQUIREMENTS:
+- Keep detailed records of all transactions
+- Document purchase dates, amounts, and prices
+- Retain proof of transfers and wallet addresses
+- Maintain exchange statements
+
+================================================
+DISCLAIMER: This is an estimate for informational purposes only.
+Cyprus tax law is subject to interpretation by tax authorities.
+Consult a qualified Cyprus tax advisor or accountant for personalized advice.
+
+The classification between "casual investor" and "professional trader" 
+depends on factors like trading frequency, volume, and intent.
 
 Generated: ${new Date().toISOString()}
     `.trim();
@@ -149,13 +171,15 @@ Generated: ${new Date().toISOString()}
       <CardContent className="space-y-4">
         <div className="bg-muted/50 p-4 rounded-lg">
           <p className="text-sm text-muted-foreground mb-2">
-            <strong>Cyprus Tax Rates (2024):</strong>
+            <strong>Cyprus Crypto Tax (2025):</strong>
           </p>
           <ul className="text-sm space-y-1 text-muted-foreground">
-            <li>• Corporate Tax: 12.5%</li>
-            <li>• Personal Income Tax: 0-35% (progressive)</li>
-            <li>• Capital Gains: Crypto treated as income if trading</li>
-            <li>• Non-dom advantages available for new residents</li>
+            <li>• <strong className="text-green-600">NO Capital Gains Tax</strong> on crypto for individuals</li>
+            <li>• Casual investors: <strong className="text-green-600">0% tax</strong> on crypto gains</li>
+            <li>• Professional traders: Income tax 0-35% (if trading = business)</li>
+            <li>• Corporate entities: 12.5% corporate tax applies</li>
+            <li>• Non-dom advantages: No SDC on dividends for 17 years</li>
+            <li>• No VAT on crypto transactions</li>
           </ul>
         </div>
 
@@ -198,9 +222,12 @@ Generated: ${new Date().toISOString()}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg border-2">
-                <span className="font-semibold">Estimated Tax Owed (12.5%)</span>
-                <span className="font-bold text-xl text-primary">
+              <div className="flex items-center justify-between p-4 bg-green-500/10 rounded-lg border-2 border-green-500/20">
+                <div>
+                  <span className="font-semibold block">Estimated Tax Owed</span>
+                  <span className="text-xs text-muted-foreground">Casual investor - no CGT</span>
+                </div>
+                <span className="font-bold text-xl text-green-600">
                   €{taxSummary.taxOwed.toFixed(2)}
                 </span>
               </div>

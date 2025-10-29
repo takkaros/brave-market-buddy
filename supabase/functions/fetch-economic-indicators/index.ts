@@ -35,9 +35,13 @@ serve(async (req) => {
       { code: 'LMUNRRTTEUM156S', name: 'EU Unemployment Rate', region: 'eu' },
       { code: 'EA19CPALTT01GYM', name: 'EU Inflation Rate', region: 'eu' },
       { code: 'ECBDFR', name: 'ECB Deposit Facility Rate', region: 'eu' },
+      { code: 'EA19GDPDEFAISMEI', name: 'EU GDP Growth', region: 'eu' },
       
-      // Cyprus (limited direct data, use proxy indicators)
-      { code: 'CYPRGDPH', name: 'Cyprus GDP per capita', region: 'cyprus' },
+      // Cyprus - using available FRED data
+      { code: 'CYPRGDPDEFQISMEI', name: 'Cyprus GDP Growth Rate', region: 'cyprus' },
+      { code: 'LRUNTTTTCYA156S', name: 'Cyprus Unemployment Rate', region: 'cyprus' },
+      { code: 'FPCPITOTLZGCYP', name: 'Cyprus Inflation Rate', region: 'cyprus' },
+      { code: 'CYPLRPTTTHTY', name: 'Cyprus Interest Rate', region: 'cyprus' },
     ];
 
     console.log('Fetching economic indicators...');

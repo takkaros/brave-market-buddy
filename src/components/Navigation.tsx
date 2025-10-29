@@ -28,6 +28,7 @@ const Navigation = () => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/portfolio', label: 'Portfolio', icon: Wallet },
+    { path: '/tools', label: 'Tools', icon: Target },
     { path: '/economics', label: 'Economics', icon: Globe },
     { path: '/crypto', label: 'Crypto', icon: Bitcoin },
     { path: '/housing', label: 'Housing', icon: Home },
