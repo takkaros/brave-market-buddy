@@ -307,28 +307,34 @@ const Crypto = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {cryptoHoldings.map((holding) => {
                   const totalValue = cryptoHoldings.reduce((sum, h) => sum + (h.value_usd || 0), 0);
                   const allocation = totalValue > 0 ? ((holding.value_usd / totalValue) * 100).toFixed(1) : '0';
                   
                   return (
-                    <div key={holding.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div>
-                        <p className="font-semibold">{holding.asset_name || holding.asset_symbol}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {holding.amount} {holding.asset_symbol}
-                        </p>
+                    <div key={holding.id} className="p-3 bg-muted/20 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">{holding.asset_symbol}</p>
+                          <p className="text-xs text-muted-foreground">{holding.asset_name}</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">{allocation}%</Badge>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold">
-                          ${(holding.value_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          @ ${(holding.price_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
-                        </p>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Amount:</span>
+                          <span className="font-medium">{Number(holding.amount).toLocaleString(undefined, { maximumFractionDigits: 8 })}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Price:</span>
+                          <span className="font-medium">${(holding.price_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
+                        </div>
+                        <div className="flex justify-between text-sm pt-1 border-t border-border/30">
+                          <span className="text-muted-foreground">Value:</span>
+                          <span className="font-bold">${(holding.value_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
                       </div>
-                      <Badge variant="outline">{allocation}%</Badge>
                     </div>
                   );
                 })}
