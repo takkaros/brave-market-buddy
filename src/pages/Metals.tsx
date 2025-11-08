@@ -121,7 +121,7 @@ const Metals = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-2xl font-bold mb-2 text-risk-moderate">REDUCE / NEUTRAL</h3>
-                <p className="text-sm text-muted-foreground">Gold at ${goldPrice} - defensive positioning less needed as risk declines</p>
+                <p className="text-sm text-muted-foreground">Gold at ${goldPrice.toFixed(2)} - defensive positioning less needed as risk declines</p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground mb-1">Score</p>
@@ -140,7 +140,7 @@ const Metals = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">${goldPrice}</p>
+              <p className="text-3xl font-bold">${goldPrice.toFixed(2)}</p>
               <p className="text-sm text-muted-foreground mt-1">Near recent highs</p>
             </CardContent>
           </Card>
@@ -153,7 +153,7 @@ const Metals = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">${silverPrice}</p>
+              <p className="text-3xl font-bold">${silverPrice.toFixed(2)}</p>
               <p className="text-sm text-muted-foreground mt-1">Lagging gold</p>
             </CardContent>
           </Card>

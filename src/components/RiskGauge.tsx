@@ -32,7 +32,7 @@ const RiskGauge = ({ score, previousScore }: RiskGaugeProps) => {
           <h2 className="text-2xl font-bold">Economic Risk Score</h2>
           {previousScore && (
             <div className={`flex items-center gap-2 text-sm ${trend > 0 ? 'text-risk-elevated' : 'text-risk-low'}`}>
-              <span>{trend > 0 ? '↑' : '↓'} {Math.abs(trend)} pts</span>
+              <span>{trend > 0 ? '↑' : '↓'} {Math.abs(trend).toFixed(1)} pts</span>
             </div>
           )}
         </div>
