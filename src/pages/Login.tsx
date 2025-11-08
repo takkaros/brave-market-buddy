@@ -25,7 +25,7 @@ const Login = () => {
 
   useEffect(() => {
     if (user && !authLoading) {
-      navigate('/portfolio-builder');
+      navigate('/');
     }
   }, [user, authLoading, navigate]);
 
@@ -48,7 +48,7 @@ const Login = () => {
         description: 'Successfully logged in',
       });
 
-      navigate('/portfolio-builder');
+      navigate('/');
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast({

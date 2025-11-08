@@ -30,7 +30,7 @@ const Signup = () => {
 
   useEffect(() => {
     if (user && !authLoading) {
-      navigate('/portfolio-builder');
+      navigate('/');
     }
   }, [user, authLoading, navigate]);
 
