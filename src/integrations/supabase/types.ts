@@ -58,6 +58,99 @@ export type Database = {
           },
         ]
       }
+      bond_data: {
+        Row: {
+          bond_type: string
+          created_at: string
+          id: string
+          price: number | null
+          timestamp: string
+          yield: number
+        }
+        Insert: {
+          bond_type: string
+          created_at?: string
+          id?: string
+          price?: number | null
+          timestamp?: string
+          yield: number
+        }
+        Update: {
+          bond_type?: string
+          created_at?: string
+          id?: string
+          price?: number | null
+          timestamp?: string
+          yield?: number
+        }
+        Relationships: []
+      }
+      btc_macro_data: {
+        Row: {
+          created_at: string
+          dominance: number
+          fear_greed_index: number
+          id: string
+          market_cap: number
+          price: number
+          timestamp: string
+          volume_24h: number
+        }
+        Insert: {
+          created_at?: string
+          dominance: number
+          fear_greed_index: number
+          id?: string
+          market_cap: number
+          price: number
+          timestamp?: string
+          volume_24h: number
+        }
+        Update: {
+          created_at?: string
+          dominance?: number
+          fear_greed_index?: number
+          id?: string
+          market_cap?: number
+          price?: number
+          timestamp?: string
+          volume_24h?: number
+        }
+        Relationships: []
+      }
+      crypto_prices: {
+        Row: {
+          change_24h: number | null
+          created_at: string
+          id: string
+          market_cap: number | null
+          price: number
+          symbol: string
+          timestamp: string
+          volume_24h: number | null
+        }
+        Insert: {
+          change_24h?: number | null
+          created_at?: string
+          id?: string
+          market_cap?: number | null
+          price: number
+          symbol: string
+          timestamp?: string
+          volume_24h?: number | null
+        }
+        Update: {
+          change_24h?: number | null
+          created_at?: string
+          id?: string
+          market_cap?: number | null
+          price?: number
+          symbol?: string
+          timestamp?: string
+          volume_24h?: number | null
+        }
+        Relationships: []
+      }
       economic_indicators: {
         Row: {
           created_at: string
@@ -91,6 +184,33 @@ export type Database = {
           source?: string | null
           updated_at?: string
           value?: number | null
+        }
+        Relationships: []
+      }
+      metal_prices: {
+        Row: {
+          change_24h: number | null
+          created_at: string
+          id: string
+          metal: string
+          price: number
+          timestamp: string
+        }
+        Insert: {
+          change_24h?: number | null
+          created_at?: string
+          id?: string
+          metal: string
+          price: number
+          timestamp?: string
+        }
+        Update: {
+          change_24h?: number | null
+          created_at?: string
+          id?: string
+          metal?: string
+          price?: number
+          timestamp?: string
         }
         Relationships: []
       }
@@ -363,6 +483,7 @@ export type Database = {
           connection_id: string | null
           created_at: string
           id: string
+          is_hidden: boolean | null
           last_updated_at: string
           notes: string | null
           price_usd: number | null
@@ -379,6 +500,7 @@ export type Database = {
           connection_id?: string | null
           created_at?: string
           id?: string
+          is_hidden?: boolean | null
           last_updated_at?: string
           notes?: string | null
           price_usd?: number | null
@@ -395,6 +517,7 @@ export type Database = {
           connection_id?: string | null
           created_at?: string
           id?: string
+          is_hidden?: boolean | null
           last_updated_at?: string
           notes?: string | null
           price_usd?: number | null
@@ -545,6 +668,36 @@ export type Database = {
           require_trade_confirmation?: boolean | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      stock_prices: {
+        Row: {
+          change_percent: number | null
+          created_at: string
+          id: string
+          price: number
+          symbol: string
+          timestamp: string
+          volume: number | null
+        }
+        Insert: {
+          change_percent?: number | null
+          created_at?: string
+          id?: string
+          price: number
+          symbol: string
+          timestamp?: string
+          volume?: number | null
+        }
+        Update: {
+          change_percent?: number | null
+          created_at?: string
+          id?: string
+          price?: number
+          symbol?: string
+          timestamp?: string
+          volume?: number | null
         }
         Relationships: []
       }
@@ -741,6 +894,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_api_keys: {
+        Row: {
+          api_key_encrypted: string
+          created_at: string | null
+          id: string
+          provider: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          api_key_encrypted: string
+          created_at?: string | null
+          id?: string
+          provider: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          api_key_encrypted?: string
+          created_at?: string | null
+          id?: string
+          provider?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
