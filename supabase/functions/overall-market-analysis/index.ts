@@ -13,41 +13,9 @@ serve(async (req) => {
   }
 
   try {
-    // Verify authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: 'Unauthorized - Authentication required',
-        timestamp: new Date().toISOString()
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    console.log('Overall market analysis request received');
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      console.error('Authentication failed:', authError?.message);
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: 'Unauthorized - Invalid token',
-        timestamp: new Date().toISOString()
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log('Authenticated market analysis request from user:', user.id);
-
-    const { 
+    const {
       btcPrice, 
       ethPrice, 
       goldPrice, 

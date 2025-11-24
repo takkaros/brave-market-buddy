@@ -37,10 +37,10 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.overall-market-analysis]
-verify_jwt = true
+verify_jwt = false
 
 [functions.risk-forecast]
-verify_jwt = true
+verify_jwt = false
 
 [functions.portfolio-analysis]
 verify_jwt = true
