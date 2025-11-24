@@ -835,13 +835,15 @@ export default function Portfolio() {
                             <Wallet className="w-5 h-5" />
                             <div>
                               <p className="font-semibold">{connection.name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                <Badge variant="outline" className="mr-2">{connection.blockchain}</Badge>
-                                {connection.wallet_address.length > 20 
-                                  ? `${connection.wallet_address.slice(0, 12)}...${connection.wallet_address.slice(-10)}`
-                                  : connection.wallet_address
-                                }
-                              </p>
+                              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                <Badge variant="outline">{connection.blockchain}</Badge>
+                                <span>
+                                  {connection.wallet_address.length > 20 
+                                    ? `${connection.wallet_address.slice(0, 12)}...${connection.wallet_address.slice(-10)}`
+                                    : connection.wallet_address
+                                  }
+                                </span>
+                              </div>
                               {connection.wallet_address.startsWith('xpub') && connection.wallet_address.length < 111 && (
                                 <div className="flex items-center gap-2 mt-2">
                                   <Badge variant="destructive" className="text-xs">
@@ -1091,11 +1093,11 @@ function AggregatedAssetTypeContent({
                     <div className="flex items-center gap-3">
                       <div>
                         <p className="font-semibold text-lg">{aggregated.asset_symbol}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {aggregated.asset_name}
-                          <Badge variant="outline" className="ml-2">{aggregated.asset_type}</Badge>
-                          <Badge variant="secondary" className="ml-2">{aggregated.subHoldings.length} source(s)</Badge>
-                        </p>
+                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                          <span>{aggregated.asset_name}</span>
+                          <Badge variant="outline">{aggregated.asset_type}</Badge>
+                          <Badge variant="secondary">{aggregated.subHoldings.length} source(s)</Badge>
+                        </div>
                       </div>
                     </div>
                   </div>
